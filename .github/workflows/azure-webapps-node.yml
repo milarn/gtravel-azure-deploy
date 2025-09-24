@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'server/package-lock.json'
 
-      - name: npm install 
+      - name: Install server dependencies
         run: |
           cd server
           npm ci --only=production

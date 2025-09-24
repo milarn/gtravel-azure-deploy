@@ -1,0 +1,13 @@
+{
+  "name": "gtravel-azure-deploy",
+  "version": "1.0.0",
+  "description": "G-Travel POC Deployment for Azure",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "install-server": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

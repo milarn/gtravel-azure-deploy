@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 // Validate configuration on startup
 validateConfig();
 
-console.log('🚀 Starting G-Travel Authentication Server...');
+console.log('🚀 Starting G Travel Authentication Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔗 Base URL: ${process.env.BASE_URL}`);
 

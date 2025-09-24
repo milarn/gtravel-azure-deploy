@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - G-Travel</title>
+    <title>Logg inn - G Travel</title>
     <style>
         * {
             margin: 0;
@@ -31,21 +31,23 @@
             padding: 2rem;
         }
 
-        .user-icon {
-            width: 64px;
-            height: 64px;
-            background: #f3f4f6;
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem auto;
             border-radius: 50%;
+            overflow: hidden;
+            background: #f9fafb;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 2rem auto;
+            padding: 8px;
         }
 
-        .user-icon svg {
-            width: 32px;
-            height: 32px;
-            color: #6b7280;
+        .company-logo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
 
         .login-header {
@@ -60,9 +62,16 @@
             margin-bottom: 0.5rem;
         }
 
-        .login-header p {
+        .login-header .subtitle {
             color: #6b7280;
             font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-header .poc-text {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            font-style: italic;
         }
 
         .login-button {
@@ -124,15 +133,14 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="user-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
+        <div class="logo-container">
+            <img src="img/g-travel-logo-1.jpg" alt="G Travel Logo" class="company-logo">
         </div>
         
         <div class="login-header">
-            <h1>Login to your account</h1>
-            <p>Sign in with your Microsoft account</p>
+            <h1>Logg inn på kontoen din</h1>
+            <p class="subtitle">Logg inn med din Microsoft-konto</p>
+            <p class="poc-text">G Travel Business Intelligence POC</p>
         </div>
         
         <div id="errorMessage" class="error-message"></div>
@@ -145,11 +153,11 @@
                     <path d="M1 12h10v10H1z" fill="#ffb900"/>
                     <path d="M12 12h10v10H12z" fill="#7fba00"/>
                 </svg>
-                Continue with Microsoft
+                Fortsett med Microsoft
             </button>
         </form>
         
-        <p class="footer-text">Secure login powered by Microsoft</p>
+        <p class="footer-text">Sikker pålogging drevet av Microsoft</p>
     </div>
 
     <script>
@@ -159,7 +167,7 @@
             
             form.addEventListener('submit', function() {
                 button.classList.add('loading');
-                button.textContent = 'Signing in...';
+                button.textContent = 'Logger inn...';
             });
             
             const urlParams = new URLSearchParams(window.location.search);
@@ -167,17 +175,17 @@
             
             if (error) {
                 const errorDiv = document.getElementById('errorMessage');
-                let message = 'Authentication failed. Please try again.';
+                let message = 'Autentisering feilet. Prøv igjen.';
                 
                 switch (error) {
                     case 'access_denied':
-                        message = 'Access denied. Please contact your administrator.';
+                        message = 'Tilgang nektet. Kontakt administratoren din.';
                         break;
                     case 'company_not_authorized':
-                        message = 'Your company is not authorized. Please contact support.';
+                        message = 'Selskapet ditt er ikke autorisert. Kontakt support.';
                         break;
                     case 'session_expired':
-                        message = 'Your session has expired. Please sign in again.';
+                        message = 'Økten din har utløpt. Logg inn igjen.';
                         break;
                 }
                 
