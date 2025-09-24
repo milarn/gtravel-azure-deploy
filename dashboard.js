@@ -1,9 +1,9 @@
-// Fixed Dashboard JavaScript - SECURE version with proper authorization
+// Fixed Dashboard JavaScript - Complete with working buttons
 
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 G-Travel Dashboard Loading...');
+    console.log('G Travel Dashboard Loading...');
     initDashboard();
 });
 
@@ -17,8 +17,85 @@ async function initDashboard() {
     }
 }
 
+function setupEventListeners() {
+    // Refresh button
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.classList.add('loading');
+            await loadFiles();
+            refreshBtn.classList.remove('loading');
+        });
+    }
+    
+    // Date filter toggle
+    const dateFilterToggle = document.getElementById('dateFilterToggle');
+    const dateFilter = document.getElementById('dateFilter');
+    if (dateFilterToggle && dateFilter) {
+        dateFilterToggle.addEventListener('click', () => {
+            dateFilter.classList.toggle('active');
+            dateFilterToggle.classList.toggle('active');
+        });
+    }
+    
+    // Apply date filter
+    const applyDateFilter = document.getElementById('applyDateFilter');
+    if (applyDateFilter) {
+        applyDateFilter.addEventListener('click', () => {
+            loadFiles();
+        });
+    }
+    
+    // Quick date filters
+    document.querySelectorAll('.quick-filter').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const days = e.target.getAttribute('data-days');
+            const custom = e.target.getAttribute('data-custom');
+            
+            const fromDateEl = document.getElementById('fromDate');
+            const toDateEl = document.getElementById('toDate');
+            
+            if (days) {
+                const toDate = new Date();
+                const fromDate = new Date();
+                fromDate.setDate(toDate.getDate() - parseInt(days));
+                
+                fromDateEl.value = fromDate.toISOString().split('T')[0];
+                toDateEl.value = toDate.toISOString().split('T')[0];
+            } else if (custom === 'current-month') {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                fromDateEl.value = firstDay.toISOString().split('T')[0];
+                toDateEl.value = lastDay.toISOString().split('T')[0];
+            }
+            
+            // Remove active class from other buttons
+            document.querySelectorAll('.quick-filter').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            loadFiles();
+        });
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            filterFiles(e.target.value);
+        });
+    }
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+}
+
 async function checkAuth() {
-    console.log('🔍 Checking authentication...');
+    console.log('Checking authentication...');
     
     try {
         const response = await fetch('/auth/user', {
@@ -36,16 +113,15 @@ async function checkAuth() {
             
             if (data?.authenticated === true && data?.user) {
                 currentUser = data.user;
-                console.log('✅ Authentication successful');
+                console.log('Authentication successful');
                 
-                // Load dashboard content
                 updateUserInterface();
                 await loadFiles();
                 return;
             }
         }
         
-        console.log('❌ Authentication failed');
+        console.log('Authentication failed');
         throw new Error('Authentication failed');
         
     } catch (error) {
@@ -57,7 +133,6 @@ async function checkAuth() {
 function updateUserInterface() {
     if (!currentUser) return;
     
-    // Update user info in sidebar
     const userName = document.getElementById('userName');
     const userCompany = document.getElementById('userCompany');
     const welcomeName = document.getElementById('welcomeName');
@@ -76,32 +151,30 @@ function updateUserInterface() {
         userInitials.textContent = initials.substring(0, 2);
     }
     
-    console.log('✅ User interface updated');
+    console.log('User interface updated');
 }
 
 function formatAccessLevel(level) {
     const levels = {
         'developer': 'Cipher Bergen AS',
-        'customer': 'G-Travel AS',
+        'customer': 'G Travel AS',
         'standard': 'Standard Access'
     };
     return levels[level] || (level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Standard');
 }
 
 async function loadFiles() {
-    console.log('📁 Loading files via secure server proxy...');
+    console.log('Loading files via secure server proxy...');
     
     const loadingElement = document.getElementById('loadingFiles');
     const noFilesElement = document.getElementById('noFilesMessage');
     const tableBody = document.getElementById('fileTableBody');
     const totalFilesElement = document.getElementById('totalFiles');
     
-    // Show loading state
     if (loadingElement) loadingElement.style.display = 'block';
     if (noFilesElement) noFilesElement.style.display = 'none';
     
     try {
-        // Get date range parameters
         const fromDate = document.getElementById('fromDate')?.value;
         const toDate = document.getElementById('toDate')?.value;
         
@@ -111,30 +184,27 @@ async function loadFiles() {
             params.append('toDate', toDate);
         }
         
-        console.log('🔗 Calling secure proxy: /api/function/files');
+        console.log('Calling secure proxy: /api/function/files');
         
-        // FIXED: Call secure server proxy instead of Azure Function directly
         const response = await fetch(`/api/function/files?${params}`, {
             method: 'GET',
-            credentials: 'include', // Include session cookie
+            credentials: 'include',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
         });
         
-        console.log(`📡 Response status: ${response.status}`);
+        console.log(`Response status: ${response.status}`);
         
         if (response.ok) {
             const data = await response.json();
             const files = data.files || [];
             
-            console.log(`📊 Loaded ${files.length} files securely for ${data.companyName || 'company'}`);
+            console.log(`Loaded ${files.length} files securely for ${data.companyName || 'company'}`);
             
-            // Update file count
             if (totalFilesElement) totalFilesElement.textContent = files.length;
             
-            // Populate table with real data
             if (tableBody) {
                 tableBody.innerHTML = '';
                 
@@ -152,7 +222,7 @@ async function loadFiles() {
                     }
                 } else {
                     files.forEach(file => {
-                        const row = createRealFileRow(file);
+                        const row = createFileRow(file);
                         tableBody.appendChild(row);
                     });
                 }
@@ -160,39 +230,23 @@ async function loadFiles() {
             
         } else {
             console.error('Failed to load files:', response.status, response.statusText);
-            const errorData = await response.json().catch(() => ({}));
             
             if (response.status === 401) {
-                console.log('🔒 Authentication required - redirecting to login');
+                console.log('Authentication required - redirecting to login');
                 redirectToLogin();
                 return;
             }
             
-            if (response.status === 403) {
-                if (noFilesElement) {
-                    noFilesElement.innerHTML = `
-                        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-7V6a3 3 0 00-3-3H6a3 3 0 00-3 3v1"/>
-                        </svg>
-                        <h3>Access Denied</h3>
-                        <p>Your organization is not authorized to access this data.</p>
-                        <p>Please contact your administrator to request access.</p>
-                    `;
-                    noFilesElement.style.display = 'block';
-                }
-            } else {
-                if (noFilesElement) {
-                    noFilesElement.innerHTML = `
-                        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <h3>Loading Error</h3>
-                        <p>Unable to load files: ${errorData.message || 'Unknown error'}</p>
-                        <p>Please refresh and try again.</p>
-                        <button onclick="loadFiles()" class="secondary-btn" style="margin-top: 10px;">Retry</button>
-                    `;
-                    noFilesElement.style.display = 'block';
-                }
+            if (noFilesElement) {
+                noFilesElement.innerHTML = `
+                    <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3>Loading Error</h3>
+                    <p>Unable to load files. Please refresh and try again.</p>
+                    <button onclick="loadFiles()" class="refresh-btn" style="margin-top: 10px;">Retry</button>
+                `;
+                noFilesElement.style.display = 'block';
             }
         }
         
@@ -205,8 +259,7 @@ async function loadFiles() {
                 </svg>
                 <h3>Connection Error</h3>
                 <p>Unable to connect to the file service.</p>
-                <p>Please check your internet connection and try again.</p>
-                <button onclick="loadFiles()" class="secondary-btn" style="margin-top: 10px;">Retry</button>
+                <button onclick="loadFiles()" class="refresh-btn" style="margin-top: 10px;">Retry</button>
             `;
             noFilesElement.style.display = 'block';
         }
@@ -215,25 +268,8 @@ async function loadFiles() {
     }
 }
 
-// Create file row for real database files
-function createRealFileRow(file) {
+function createFileRow(file) {
     const row = document.createElement('tr');
-    
-    // Enhanced styling for different file types
-    const categoryColors = {
-        'Invoice Data': '#dbeafe #1e40af',
-        'Travel Expenses': '#fef3c7 #d97706',
-        'Business Reports': '#f0fdf4 #16a34a',
-        'Analytics': '#f3e8ff #7c3aed',
-        'Development': '#1f2937 #ffffff',
-        'Testing': '#374151 #ffffff',
-        'Documentation': '#6b7280 #ffffff',
-        'Financial': '#ecfdf5 #059669',
-        'Company Policies': '#e0f2fe #0891b2'
-    };
-    
-    const colors = categoryColors[file.category] || '#f3f4f6 #6b7280';
-    const [bgColor, textColor] = colors.split(' ');
     
     row.innerHTML = `
         <td>
@@ -248,160 +284,35 @@ function createRealFileRow(file) {
             </div>
         </td>
         <td>
-            <span class="category-badge" style="background-color: ${bgColor}; color: ${textColor};">
-                ${file.category}
-            </span>
+            <span class="file-category">${file.category}</span>
         </td>
-        <td>${file.size}</td>
-        <td>${formatDate(file.lastUpdated)}</td>
-        <td class="actions-cell">
-            <button class="preview-btn" onclick="previewFile('${file.accno || 'unknown'}', '${file.src_file || 'unknown'}'); return false;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>
-                Preview
-            </button>
-            <button class="download-btn" onclick="downloadRealFile('${file.accno || 'unknown'}', '${file.src_file || 'unknown'}'); return false;">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
-                </svg>
-                Download
-            </button>
+        <td class="file-size">${file.size}</td>
+        <td class="file-date">${new Date(file.lastUpdated).toLocaleDateString()}</td>
+        <td>
+            <div class="file-actions">
+                <button class="action-btn preview" onclick="previewFile('${file.accno}')">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Preview
+                </button>
+                <button class="action-btn download" onclick="downloadFile('${file.accno}')">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+                    </svg>
+                    Download
+                </button>
+            </div>
         </td>
     `;
     
     return row;
 }
 
-function formatDate(dateString) {
-    try {
-        return new Date(dateString).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    } catch {
-        return dateString;
-    }
-}
-
-function setupEventListeners() {
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-    
-    // Refresh files
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadFiles);
-    }
-    
-    // Date filter toggle
-    const dateFilterToggle = document.getElementById('dateFilterToggle');
-    const dateFilter = document.getElementById('dateFilter');
-    if (dateFilterToggle && dateFilter) {
-        dateFilterToggle.addEventListener('click', () => {
-            dateFilter.classList.toggle('active');
-        });
-    }
-    
-    // Quick date filters
-    const quickFilters = document.querySelectorAll('.quick-filter');
-    quickFilters.forEach(filter => {
-        filter.addEventListener('click', () => {
-            const days = filter.dataset.days;
-            const custom = filter.dataset.custom;
-            
-            if (days) {
-                setDateRange(parseInt(days));
-            } else if (custom === 'current-month') {
-                setCurrentMonth();
-            }
-        });
-    });
-    
-    // Apply date filter
-    const applyFilterBtn = document.getElementById('applyDateFilter');
-    if (applyFilterBtn) {
-        applyFilterBtn.addEventListener('click', applyDateFilter);
-    }
-    
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', handleSearch);
-    }
-    
-    console.log('✅ Event listeners setup complete');
-}
-
-function setDateRange(days) {
-    const toDate = new Date();
-    const fromDate = new Date();
-    fromDate.setDate(toDate.getDate() - days);
-    
-    const fromInput = document.getElementById('fromDate');
-    const toInput = document.getElementById('toDate');
-    
-    if (fromInput) fromInput.value = fromDate.toISOString().split('T')[0];
-    if (toInput) toInput.value = toDate.toISOString().split('T')[0];
-}
-
-function setCurrentMonth() {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    const fromInput = document.getElementById('fromDate');
-    const toInput = document.getElementById('toDate');
-    
-    if (fromInput) fromInput.value = firstDay.toISOString().split('T')[0];
-    if (toInput) toInput.value = lastDay.toISOString().split('T')[0];
-}
-
-function applyDateFilter() {
-    console.log('Applying date filter...');
-    loadFiles();
-}
-
-function handleSearch() {
-    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    const rows = document.querySelectorAll('#fileTableBody tr');
-    
-    rows.forEach(row => {
-        const fileName = row.querySelector('.file-name')?.textContent.toLowerCase() || '';
-        const category = row.querySelector('.category-badge')?.textContent.toLowerCase() || '';
-        
-        const matches = fileName.includes(searchTerm) || category.includes(searchTerm);
-        row.style.display = matches ? '' : 'none';
-    });
-}
-
-async function handleLogout() {
-    console.log('🚪 Logging out...');
-    try {
-        await fetch('/auth/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-    } catch (error) {
-        console.error('Logout error:', error);
-    }
-    
-    redirectToLogin();
-}
-
-function redirectToLogin() {
-    console.log('🔄 Redirecting to login...');
-    window.location.href = '/login';
-}
-
-// FIXED: Preview file via secure server proxy
-window.previewFile = async function(accno, srcFile) {
-    console.log('🔍 Previewing file:', accno, srcFile);
+// Preview file function
+window.previewFile = async function(accno) {
+    console.log('Previewing file:', accno);
     
     try {
         const fromDate = document.getElementById('fromDate')?.value;
@@ -413,10 +324,9 @@ window.previewFile = async function(accno, srcFile) {
             params.append('toDate', toDate);
         }
         
-        console.log(`🔗 Calling secure preview proxy: /api/function/preview/${accno}/${srcFile}`);
+        console.log(`Calling secure preview proxy: /api/function/preview/${accno}/data`);
         
-        // FIXED: Use secure server proxy
-        const response = await fetch(`/api/function/preview/${accno}/${srcFile}?${params}`, {
+        const response = await fetch(`/api/function/preview/${accno}/data?${params}`, {
             method: 'GET',
             credentials: 'include'
         });
@@ -439,9 +349,9 @@ window.previewFile = async function(accno, srcFile) {
     }
 };
 
-// FIXED: Download file via secure server proxy
-window.downloadRealFile = async function(accno, srcFile) {
-    console.log('📥 Downloading file:', accno, srcFile);
+// Download file function
+window.downloadFile = async function(accno) {
+    console.log('Downloading file:', accno);
     
     try {
         const fromDate = document.getElementById('fromDate')?.value;
@@ -453,42 +363,25 @@ window.downloadRealFile = async function(accno, srcFile) {
             params.append('toDate', toDate);
         }
         
-        console.log(`🔗 Calling secure download proxy: /api/function/download/${accno}/${srcFile}`);
+        console.log(`Calling secure download proxy: /api/function/download/${accno}/data`);
         
-        // FIXED: Use secure server proxy
-        const response = await fetch(`/api/function/download/${accno}/${srcFile}?${params}`, {
+        const response = await fetch(`/api/function/download/${accno}/data?${params}`, {
             method: 'GET',
             credentials: 'include'
         });
         
         if (response.ok) {
-            const contentType = response.headers.get('content-type');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${accno}_InvoiceData_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
             
-            if (contentType && contentType.includes('application/json')) {
-                // Handle JSON response (e.g., download URL)
-                const data = await response.json();
-                if (data.downloadUrl) {
-                    const link = document.createElement('a');
-                    link.href = data.downloadUrl;
-                    link.download = `${accno}_${srcFile}_${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }
-            } else {
-                // Handle direct file stream
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${accno}_${srcFile}_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-            }
-            
-            console.log('✅ Download completed');
+            console.log('Download completed');
         } else {
             console.error('Download failed:', response.status);
             if (response.status === 401) {
@@ -504,15 +397,12 @@ window.downloadRealFile = async function(accno, srcFile) {
     }
 };
 
-// Show preview modal
 function showPreviewModal(data) {
-    // Remove existing modal
     const existingModal = document.getElementById('previewModal');
     if (existingModal) {
         existingModal.remove();
     }
     
-    // Create modal
     const modal = document.createElement('div');
     modal.id = 'previewModal';
     modal.className = 'preview-modal';
@@ -523,7 +413,7 @@ function showPreviewModal(data) {
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Preview: ${data.accno} - ${data.srcFile}</h3>
+                <h3>Preview: ${data.accno}</h3>
                 <button class="close-modal" onclick="closePreviewModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -546,24 +436,21 @@ function showPreviewModal(data) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="download-btn" onclick="downloadRealFile('${data.accno}', '${data.srcFile}'); closePreviewModal();">
+                <button class="action-btn download" onclick="downloadFile('${data.accno}'); closePreviewModal();">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
                     </svg>
                     Download Full File
                 </button>
-                <button class="secondary-btn" onclick="closePreviewModal()">Close</button>
+                <button class="refresh-btn" onclick="closePreviewModal()">Close</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
-    
-    // Show modal
     setTimeout(() => modal.classList.add('show'), 10);
 }
 
-// Close preview modal
 window.closePreviewModal = function() {
     const modal = document.getElementById('previewModal');
     if (modal) {
@@ -572,4 +459,36 @@ window.closePreviewModal = function() {
     }
 };
 
-console.log('📋 Secure Dashboard script loaded - Authorization Fixed!');
+function filterFiles(searchTerm) {
+    const rows = document.querySelectorAll('#fileTableBody tr');
+    searchTerm = searchTerm.toLowerCase();
+    
+    rows.forEach(row => {
+        const fileName = row.querySelector('.file-name')?.textContent.toLowerCase() || '';
+        const category = row.querySelector('.file-category')?.textContent.toLowerCase() || '';
+        
+        const matches = fileName.includes(searchTerm) || category.includes(searchTerm);
+        row.style.display = matches ? '' : 'none';
+    });
+}
+
+async function handleLogout() {
+    console.log('Logging out...');
+    try {
+        await fetch('/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+    
+    redirectToLogin();
+}
+
+function redirectToLogin() {
+    console.log('Redirecting to login...');
+    window.location.href = '/login';
+}
+
+console.log('Secure Dashboard script loaded - Authorization Fixed!');
