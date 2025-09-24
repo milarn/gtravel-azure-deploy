@@ -24,28 +24,23 @@ console.log('🚀 Starting G Travel Authentication Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔗 Base URL: ${process.env.BASE_URL}`);
 
-// DISABLED CSP for development - CSP was blocking JavaScript execution
-if (process.env.NODE_ENV === 'production') {
-    app.use(helmet({
-        contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                scriptSrc: ["'self'", "'unsafe-inline'"],
-                imgSrc: ["'self'", "data:", "https:"],
-                connectSrc: ["'self'", "https://login.microsoftonline.com"],
-                formAction: ["'self'", "https://login.microsoftonline.com"],
-                frameSrc: ["https://login.microsoftonline.com"]
-            }
+// CSP configuration for both development and production
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://login.microsoftonline.com"],
+            formAction: ["'self'", "https://login.microsoftonline.com"],
+            frameSrc: ["https://login.microsoftonline.com"],
+            fontSrc: ["'self'"]
         }
-    }));
-} else {
-    // Development: Use helmet but disable CSP
-    app.use(helmet({
-        contentSecurityPolicy: false
-    }));
-    console.log('⚠️ CSP disabled for development');
-}
+    },
+    crossOriginEmbedderPolicy: false
+}));
+console.log('🛡️ CSP enabled with development-friendly policies');
 
 // CORS configuration
 app.use(cors({
@@ -104,16 +99,28 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, '../'), {
     dotfiles: 'ignore',
     etag: true,
-    extensions: ['html', 'css', 'js'],
+    extensions: ['html', 'css', 'js', 'svg', 'ico'],
     index: ['login.html'],
     maxAge: '1d',
     redirect: false,
     setHeaders: (res, path, stat) => {
         if (path.endsWith('.html')) {
             res.set('Cache-Control', 'public, max-age=0');
+        } else if (path.endsWith('.svg')) {
+            res.set('Content-Type', 'image/svg+xml');
         }
     }
 }));
+
+// Specific favicon routes
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, '../favicon.ico'));
+});
+
+app.get('/favicon.svg', (req, res) => {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.sendFile(path.join(__dirname, '../favicon.svg'));
+});
 
 // Authentication routes - ALL auth endpoints are under /auth/
 app.use('/auth', authRoutes);

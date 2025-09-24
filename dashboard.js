@@ -4,7 +4,13 @@ let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('G Travel Dashboard Loading...');
-    initDashboard();
+    try {
+        initDashboard();
+    } catch (error) {
+        console.error('Failed to initialize dashboard:', error);
+        // Fallback: show basic error message
+        document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Loading Error</h1><p>Please refresh the page and try again.</p></div>';
+    }
 });
 
 async function initDashboard() {
@@ -18,15 +24,23 @@ async function initDashboard() {
 }
 
 function setupEventListeners() {
-    // Refresh button
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
-            refreshBtn.classList.add('loading');
-            await loadFiles();
-            refreshBtn.classList.remove('loading');
-        });
-    }
+    try {
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                try {
+                    refreshBtn.classList.add('loading');
+                    await loadFiles();
+                } catch (error) {
+                    console.error('Error loading files:', error);
+                } finally {
+                    refreshBtn.classList.remove('loading');
+                }
+            });
+        } else {
+            console.warn('Refresh button not found');
+        }
     
     // Date filter toggle
     const dateFilterToggle = document.getElementById('dateFilterToggle');
@@ -87,10 +101,13 @@ function setupEventListeners() {
         });
     }
     
-    // Logout button
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+    } catch (error) {
+        console.error('Error setting up event listeners:', error);
     }
 }
 
@@ -290,14 +307,14 @@ function createFileRow(file) {
         <td class="file-date">${new Date(file.lastUpdated).toLocaleDateString()}</td>
         <td>
             <div class="file-actions">
-                <button class="action-btn preview" onclick="previewFile('${file.accno}')">
+                <button class="action-btn preview" data-accno="${file.accno}">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                     Preview
                 </button>
-                <button class="action-btn download" onclick="downloadFile('${file.accno}')">
+                <button class="action-btn download" data-accno="${file.accno}">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
                     </svg>
@@ -306,6 +323,18 @@ function createFileRow(file) {
             </div>
         </td>
     `;
+    
+    // Add event listeners (CSP-compliant)
+    const previewBtn = row.querySelector('.preview');
+    const downloadBtn = row.querySelector('.download');
+    
+    if (previewBtn) {
+        previewBtn.addEventListener('click', () => previewFile(file.accno));
+    }
+    
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => downloadFile(file.accno));
+    }
     
     return row;
 }
@@ -414,7 +443,7 @@ function showPreviewModal(data) {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Preview: ${data.accno}</h3>
-                <button class="close-modal" onclick="closePreviewModal()">&times;</button>
+                <button class="close-modal">&times;</button>
             </div>
             <div class="modal-body">
                 <p class="preview-info">Showing first ${preview.length} rows</p>
@@ -436,18 +465,51 @@ function showPreviewModal(data) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="action-btn download" onclick="downloadFile('${data.accno}'); closePreviewModal();">
+                <button class="action-btn download modal-download-btn" data-accno="${data.accno}">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
                     </svg>
                     Download Full File
                 </button>
-                <button class="refresh-btn" onclick="closePreviewModal()">Close</button>
+                <button class="refresh-btn modal-close-btn">Close</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
+    
+    // Add event listeners (CSP-compliant)
+    const closeBtn = modal.querySelector('.close-modal');
+    const closeBtnFooter = modal.querySelector('.modal-close-btn');
+    const downloadBtn = modal.querySelector('.modal-download-btn');
+    
+    const closeModal = () => {
+        modal.classList.remove('show');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (closeBtnFooter) {
+        closeBtnFooter.addEventListener('click', closeModal);
+    }
+    
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            downloadFile(data.accno);
+            closeModal();
+        });
+    }
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
     setTimeout(() => modal.classList.add('show'), 10);
 }
 
