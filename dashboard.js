@@ -329,22 +329,30 @@ function createFileRow(file) {
     const downloadBtn = row.querySelector('.download');
     
     if (previewBtn) {
-        previewBtn.addEventListener('click', () => previewFile(file.accno));
+        previewBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await previewFile(file.accno, previewBtn);
+        });
     }
     
     if (downloadBtn) {
-        downloadBtn.addEventListener('click', () => downloadFile(file.accno));
+        downloadBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await downloadFile(file.accno, downloadBtn);
+        });
     }
     
     return row;
 }
 
 // Preview file function
-window.previewFile = async function(accno) {
+window.previewFile = async function(accno, buttonElement = null) {
     console.log('Previewing file:', accno);
     
-    // Find the button that triggered this and show loading state
-    const previewBtn = document.querySelector(`button.preview[data-accno="${accno}"]`);
+    // Use provided button or find it
+    const previewBtn = buttonElement || document.querySelector(`button.preview[data-accno="${accno}"]`);
     if (previewBtn) {
         previewBtn.classList.add('loading');
     }
@@ -390,11 +398,11 @@ window.previewFile = async function(accno) {
 };
 
 // Download file function
-window.downloadFile = async function(accno) {
+window.downloadFile = async function(accno, buttonElement = null) {
     console.log('Downloading file:', accno);
     
-    // Find the button that triggered this and show loading state
-    const downloadBtn = document.querySelector(`button.download[data-accno="${accno}"]`);
+    // Use provided button or find it
+    const downloadBtn = buttonElement || document.querySelector(`button.download[data-accno="${accno}"]`);
     if (downloadBtn) {
         downloadBtn.classList.add('loading');
     }
@@ -524,7 +532,7 @@ function showPreviewModal(data) {
             downloadBtn.classList.add('loading');
             
             try {
-                await downloadFile(data.accno);
+                await downloadFile(data.accno, downloadBtn);
                 closeModal();
             } finally {
                 downloadBtn.classList.remove('loading');
