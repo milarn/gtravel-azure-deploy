@@ -312,13 +312,13 @@ function createFileRow(file) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
-                    Preview
+                    <span class="btn-text">Preview</span>
                 </button>
                 <button class="action-btn download" data-accno="${file.accno}">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
                     </svg>
-                    Download
+                    <span class="btn-text">Download</span>
                 </button>
             </div>
         </td>
@@ -342,6 +342,12 @@ function createFileRow(file) {
 // Preview file function
 window.previewFile = async function(accno) {
     console.log('Previewing file:', accno);
+    
+    // Find the button that triggered this and show loading state
+    const previewBtn = document.querySelector(`button.preview[data-accno="${accno}"]`);
+    if (previewBtn) {
+        previewBtn.classList.add('loading');
+    }
     
     try {
         const fromDate = document.getElementById('fromDate')?.value;
@@ -375,12 +381,23 @@ window.previewFile = async function(accno) {
     } catch (error) {
         console.error('Preview error:', error);
         alert('Error loading preview.');
+    } finally {
+        // Always remove loading state
+        if (previewBtn) {
+            previewBtn.classList.remove('loading');
+        }
     }
 };
 
 // Download file function
 window.downloadFile = async function(accno) {
     console.log('Downloading file:', accno);
+    
+    // Find the button that triggered this and show loading state
+    const downloadBtn = document.querySelector(`button.download[data-accno="${accno}"]`);
+    if (downloadBtn) {
+        downloadBtn.classList.add('loading');
+    }
     
     try {
         const fromDate = document.getElementById('fromDate')?.value;
@@ -423,6 +440,11 @@ window.downloadFile = async function(accno) {
     } catch (error) {
         console.error('Download error:', error);
         alert('Download failed. Please try again.');
+    } finally {
+        // Always remove loading state
+        if (downloadBtn) {
+            downloadBtn.classList.remove('loading');
+        }
     }
 };
 
@@ -469,7 +491,7 @@ function showPreviewModal(data) {
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
                     </svg>
-                    Download Full File
+                    <span class="btn-text">Download Full File</span>
                 </button>
                 <button class="refresh-btn modal-close-btn">Close</button>
             </div>
@@ -497,9 +519,16 @@ function showPreviewModal(data) {
     }
     
     if (downloadBtn) {
-        downloadBtn.addEventListener('click', () => {
-            downloadFile(data.accno);
-            closeModal();
+        downloadBtn.addEventListener('click', async () => {
+            // Show loading state on modal button
+            downloadBtn.classList.add('loading');
+            
+            try {
+                await downloadFile(data.accno);
+                closeModal();
+            } finally {
+                downloadBtn.classList.remove('loading');
+            }
         });
     }
     
