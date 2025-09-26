@@ -1140,3 +1140,82 @@ body {
     border-color: rgba(239, 68, 68, 0.5) !important;
     color: white !important;
 }
+
+/* SIDEBAR WHITE OVERRIDE - Only header should be dark */
+.sidebar {
+    background: white !important;
+    border-right: 1px solid #e5e7eb !important;
+}
+
+.sidebar-nav {
+    background: white !important;
+}
+
+.nav-item {
+    color: #6b7280 !important;
+}
+
+.nav-item:hover {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+    transform: none !important;
+}
+
+.nav-item.active {
+    background: #3b82f6 !important;
+    color: white !important;
+    box-shadow: none !important;
+}
+
+.sidebar-footer {
+    background: white !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
+.user-avatar {
+    background: #3b82f6 !important;
+    border: none !important;
+}
+
+.user-name {
+    color: #111827 !important;
+}
+
+.user-company {
+    color: #6b7280 !important;
+}
+
+.logout-btn {
+    background: #f3f4f6 !important;
+    color: #6b7280 !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.logout-btn:hover {
+    background: #ef4444 !important;
+    color: white !important;
+    border-color: #dc2626 !important;
+}
+
+/* BIGGER PREVIEW MODAL */
+.preview-modal .modal-content {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    width: 1200px !important;
+    height: 800px !important;
+}
+
+.preview-table-container {
+    max-height: 600px !important;
+    overflow: auto;
+}
+
+.preview-table {
+    font-size: 0.8rem !important;
+}
+
+.preview-table th,
+.preview-table td {
+    padding: 0.5rem !important;
+    white-space: nowrap;
+}
