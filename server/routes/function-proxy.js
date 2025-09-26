@@ -6,6 +6,37 @@ const router = express.Router();
 // Apply authentication to all routes
 router.use(requireAuth);
 
+// Debug endpoint to test server functionality
+router.get('/debug', async (req, res) => {
+    try {
+        console.log('🔍 Debug endpoint called');
+        
+        const user = req.session.user;
+        
+        res.json({
+            status: 'Server working',
+            user: {
+                displayName: user.displayName,
+                userDomain: user.userDomain,
+                company: user.company,
+                accessLevel: user.accessLevel
+            },
+            environment: {
+                azureFunctionUrl: process.env.AZURE_FUNCTION_BASE_URL ? 'Set' : 'Missing',
+                nodeEnv: process.env.NODE_ENV
+            },
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Debug endpoint error:', error);
+        res.status(500).json({
+            error: 'Debug endpoint failed',
+            message: error.message
+        });
+    }
+});
+
 // Get files from Azure Function with proper authorization
 router.get('/files', async (req, res) => {
     try {
