@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - G Travel</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="enhanced-cards.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:;">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar with enhanced logo area -->
+        <aside class="sidebar">
+            <div class="sidebar-header" style="background: #15104b !important;">
+                <h1 class="logo">G Travel</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Reports
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <span id="userInitials">MK</span>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Martin Kjerrgard Lund</div>
+                        <div class="user-company" id="userCompany">Cipher Bergen AS</div>
+                    </div>
+                </div>
+                
+                <button class="logout-btn" id="logoutBtn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="main-header">
+                <h1>Welcome back, <span id="welcomeName">Martin</span></h1>
+                <p class="header-subtitle">Manage your files and reports</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-bar">
+                <div class="controls-left">
+                    <div class="search-box">
+                        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" placeholder="Search files..." id="searchInput">
+                    </div>
+                    
+                    <button class="filter-toggle" id="dateFilterToggle">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Filter by Date
+                    </button>
+                </div>
+                
+                <button class="refresh-btn" id="refreshBtn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+
+            <!-- Date Filter Panel with FIXED buttons -->
+            <div class="date-filter" id="dateFilter">
+                <div class="date-inputs">
+                    <div class="date-group">
+                        <label>From:</label>
+                        <input type="date" id="fromDate">
+                    </div>
+                    <div class="date-group">
+                        <label>To:</label>
+                        <input type="date" id="toDate">
+                    </div>
+                    <button class="apply-filter" id="applyDateFilter">Apply Filter</button>
+                </div>
+                
+                <div class="quick-filters">
+                    <button class="quick-filter" data-days="7">Last 7 Days</button>
+                    <button class="quick-filter" data-days="30">Last 30 Days</button>
+                    <button class="quick-filter" data-custom="current-month">This Month</button>
+                </div>
+            </div>
+
+            <!-- Enhanced Travel Statistics Cards -->
+            <div class="travel-stats">
+                <div class="stat-card" id="airline-card">
+                    <h3>Mest brukte flyselskap</h3>
+                    <div class="stat-number">Laster...</div>
+                    <div class="stat-label">Analyserer flyselskaper</div>
+                    <div class="progress-indicator">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="card-action-btn" onclick="downloadCardData('airlines')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export
+                        </button>
+                        <button class="card-action-btn" onclick="viewCardDetails('airlines')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Details
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="stat-card" id="destination-card">
+                    <h3>Mest besøkte destinasjon</h3>
+                    <div class="stat-number">Laster...</div>
+                    <div class="stat-label">Analyserer destinasjoner</div>
+                    <div class="progress-indicator">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="card-action-btn" onclick="downloadCardData('destinations')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export
+                        </button>
+                        <button class="card-action-btn" onclick="viewCardDetails('destinations')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Map
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="stat-card" id="routes-card">
+                    <h3>Unike ruter</h3>
+                    <div class="stat-number">Laster...</div>
+                    <div class="stat-label">Analyserer reiseruter</div>
+                    <div class="progress-indicator">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="card-action-btn" onclick="downloadCardData('routes')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export
+                        </button>
+                        <button class="card-action-btn" onclick="viewCardDetails('routes')">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                            </svg>
+                            Routes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Files Table -->
+            <div class="files-section">
+                <div class="section-header">
+                    <h2>Your Files</h2>
+                </div>
+                
+                <div class="files-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Category</th>
+                                <th>Size</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fileTableBody">
+                            <!-- Files will be loaded dynamically -->
+                        </tbody>
+                    </table>
+                    
+                    <div id="loadingFiles" class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading your files...</p>
+                    </div>
+                    
+                    <div id="noFilesMessage" class="empty-state" style="display: none;">
+                        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        <h3>No files found</h3>
+                        <p>Files will appear here once they are uploaded to the system.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Files</h3>
+                    <p class="stat-number" id="totalFiles">8</p>
+                    <p class="stat-label">In your workspace</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Company Access</h3>
+                    <p class="stat-number" id="accessLevel">Cipher Bergen AS</p>
+                    <p class="stat-label">Your permissions</p>
+                </div>
+                
+                <div class="stat-card">
+                    <h3>Account Status</h3>
+                    <div class="status-indicator">
+                        <div class="status-dot active"></div>
+                        <p class="stat-number">Active</p>
+                    </div>
+                    <p class="stat-label">Authenticated</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        // Enhanced card action functions
+        function downloadCardData(type) {
+            console.log(`Downloading ${type} data...`);
+            // This would trigger download of filtered data based on card type
+            alert(`Downloading ${type} data for the current date range...`);
+        }
+        
+        function viewCardDetails(type) {
+            console.log(`Viewing ${type} details...`);
+            // This would show detailed breakdown
+            alert(`Showing detailed breakdown for ${type}...`);
+        }
+        
+        // Enhanced card update function with progress bars
+        function updateDynamicCardsEnhanced(stats) {
+            const cards = document.querySelectorAll('.travel-stats .stat-card');
+            
+            if (cards.length >= 3 && stats) {
+                // Update cards with animation
+                updateCardWithAnimation(cards[0], stats.mostUsedAirlines.primary.name, stats.mostUsedAirlines);
+                updateCardWithAnimation(cards[1], stats.mostVisitedDestination.destination.name, stats.mostVisitedDestination);
+                updateCardWithAnimation(cards[2], stats.flightMetrics.value.toString(), stats.flightMetrics);
+            }
+        }
+        
+        function updateCardWithAnimation(card, value, data) {
+            const numberEl = card.querySelector('.stat-number');
+            const labelEl = card.querySelector('.stat-label');
+            const progressBar = card.querySelector('.progress-bar');
+            
+            // Animate number change
+            numberEl.textContent = value !== 'Ingen data' ? value : '—';
+            
+            // Update label based on card type
+            if (data.title.includes('flyselskap')) {
+                labelEl.textContent = data.primary.count > 0 ? `${data.primary.count} reiser` : 'Ingen flyreiser';
+                progressBar.style.width = Math.min(data.primary.count * 2, 100) + '%';
+            } else if (data.title.includes('destinasjon')) {
+                labelEl.textContent = data.count > 0 ? `${data.count} besøk` : 'Ingen destinasjoner';
+                progressBar.style.width = Math.min(data.count * 3, 100) + '%';
+            } else {
+                labelEl.textContent = data.subtitle || 'Beregnet';
+                progressBar.style.width = Math.min(data.value * 5, 100) + '%';
+            }
+        }
+        
+        // Override the original function
+        if (typeof updateDynamicCards === 'function') {
+            window.updateDynamicCards = updateDynamicCardsEnhanced;
+        }
+    </script>
+</body>
+</html>
