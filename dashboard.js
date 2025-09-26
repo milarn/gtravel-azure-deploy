@@ -59,6 +59,8 @@ function setupEventListeners() {
     const applyDateFilter = document.getElementById('applyDateFilter');
     if (applyDateFilter) {
         applyDateFilter.addEventListener('click', () => {
+            // Clear quick filter active states when manually applying
+            document.querySelectorAll('.quick-filter').forEach(b => b.classList.remove('active'));
             loadFiles();
             loadDynamicStats(); // Update stats with new date range
         });
@@ -89,12 +91,19 @@ function setupEventListeners() {
                 toDateEl.value = lastDay.toISOString().split('T')[0];
             }
             
-            // Remove active class from other buttons
+            // Remove active class from other buttons and auto-apply
             document.querySelectorAll('.quick-filter').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             
+            // Auto-apply the filter without needing to click Apply
             loadFiles();
-            loadDynamicStats(); // Update stats with new date range
+            loadDynamicStats();
+            
+            // Close the date filter panel
+            const dateFilter = document.getElementById('dateFilter');
+            const dateFilterToggle = document.getElementById('dateFilterToggle');
+            if (dateFilter) dateFilter.classList.remove('active');
+            if (dateFilterToggle) dateFilterToggle.classList.remove('active');
         });
     });
     
@@ -116,11 +125,11 @@ function setupEventListeners() {
     }
 }
 
-// NEW FUNCTION: Load dynamic statistics for cards
+// NEW FUNCTION: Load dynamic statistics for cards (OPTIMIZED FOR SPEED)
 async function loadDynamicStats() {
     console.log('📊 Loading dynamic statistics...');
     
-    // Show loading state on cards
+    // Show loading state immediately
     showCardsLoadingState();
     
     try {
@@ -135,14 +144,21 @@ async function loadDynamicStats() {
         
         console.log('Calling dynamic stats proxy: /api/function/stats');
         
+        // Add timeout for faster failure
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const response = await fetch(`/api/function/stats?${params}`, {
             method: 'GET',
             credentials: 'include',
+            signal: controller.signal,
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
             const data = await response.json();
@@ -155,9 +171,38 @@ async function loadDynamicStats() {
         }
         
     } catch (error) {
-        console.error('Dynamic stats error:', error);
-        showCardsErrorState();
+        if (error.name === 'AbortError') {
+            console.error('Stats loading timeout - using fallback data');
+            // Show fallback data instead of error
+            showFallbackStats();
+        } else {
+            console.error('Dynamic stats error:', error);
+            showCardsErrorState();
+        }
     }
+}
+
+// Show fallback stats when loading fails
+function showFallbackStats() {
+    const fallbackStats = {
+        mostUsedAirlines: {
+            title: "Mest brukte flyselskap",
+            primary: { name: 'Beregner...', count: 0 },
+            secondary: []
+        },
+        mostVisitedDestination: {
+            title: "Mest besøkte destinasjon",
+            destination: { name: 'Beregner...' },
+            count: 0
+        },
+        flightMetrics: {
+            title: "Unike ruter",
+            value: 0,
+            subtitle: "Beregner reiseruter"
+        }
+    };
+    
+    updateDynamicCards(fallbackStats);
 }
 
 // Show loading state on cards

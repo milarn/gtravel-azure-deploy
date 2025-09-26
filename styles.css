@@ -1030,6 +1030,63 @@ body {
     }
 }
 
+/* ENHANCED CARDS - Better styling for travel stats */
+.travel-stats .stat-card {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    min-height: 140px;
+    overflow: hidden;
+}
+
+.travel-stats .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.travel-stats .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+}
+
+.travel-stats .stat-card h3 {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: #6b7280 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem !important;
+}
+
+.travel-stats .stat-card .stat-number {
+    font-size: 2.25rem !important;
+    font-weight: 800 !important;
+    color: #111827 !important;
+    margin: 0.5rem 0 1rem 0 !important;
+    line-height: 1.1 !important;
+    background: linear-gradient(135deg, #1f2937, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.travel-stats .stat-card .stat-label {
+    font-size: 0.875rem !important;
+    color: #6b7280 !important;
+    line-height: 1.4 !important;
+    margin-bottom: 1rem !important;
+}
+
 /* Dark Blue Sidebar Theme Override */
 .nav-item {
     color: rgba(255, 255, 255, 0.8) !important;
