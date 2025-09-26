@@ -1,4 +1,4 @@
-// Fixed Dashboard JavaScript - Complete with working buttons
+// Fixed Dashboard JavaScript with Dynamic Statistics
 
 let currentUser = null;
 
@@ -17,6 +17,8 @@ async function initDashboard() {
     try {
         await checkAuth();
         setupEventListeners();
+        // Load dynamic statistics after authentication
+        await loadDynamicStats();
     } catch (error) {
         console.error('Dashboard initialization failed:', error);
         redirectToLogin();
@@ -32,6 +34,7 @@ function setupEventListeners() {
                 try {
                     refreshBtn.classList.add('loading');
                     await loadFiles();
+                    await loadDynamicStats(); // Also refresh dynamic stats
                 } catch (error) {
                     console.error('Error loading files:', error);
                 } finally {
@@ -57,6 +60,7 @@ function setupEventListeners() {
     if (applyDateFilter) {
         applyDateFilter.addEventListener('click', () => {
             loadFiles();
+            loadDynamicStats(); // Update stats with new date range
         });
     }
     
@@ -90,6 +94,7 @@ function setupEventListeners() {
             e.target.classList.add('active');
             
             loadFiles();
+            loadDynamicStats(); // Update stats with new date range
         });
     });
     
@@ -108,6 +113,156 @@ function setupEventListeners() {
         }
     } catch (error) {
         console.error('Error setting up event listeners:', error);
+    }
+}
+
+// NEW FUNCTION: Load dynamic statistics for cards
+async function loadDynamicStats() {
+    console.log('📊 Loading dynamic statistics...');
+    
+    // Show loading state on cards
+    showCardsLoadingState();
+    
+    try {
+        const fromDate = document.getElementById('fromDate')?.value;
+        const toDate = document.getElementById('toDate')?.value;
+        
+        const params = new URLSearchParams();
+        if (fromDate && toDate) {
+            params.append('fromDate', fromDate);
+            params.append('toDate', toDate);
+        }
+        
+        console.log('Calling dynamic stats proxy: /api/function/stats');
+        
+        const response = await fetch(`/api/function/stats?${params}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📈 Dynamic stats loaded:', data);
+            
+            updateDynamicCards(data.stats);
+        } else {
+            console.error('Failed to load dynamic stats:', response.status);
+            showCardsErrorState();
+        }
+        
+    } catch (error) {
+        console.error('Dynamic stats error:', error);
+        showCardsErrorState();
+    }
+}
+
+// Show loading state on cards
+function showCardsLoadingState() {
+    const cards = document.querySelectorAll('.travel-stats .stat-card');
+    cards.forEach((card, index) => {
+        const numberElement = card.querySelector('.stat-number');
+        const labelElement = card.querySelector('.stat-label');
+        
+        if (numberElement) {
+            numberElement.textContent = '...';
+        }
+        if (labelElement) {
+            labelElement.textContent = 'Laster data...';
+        }
+    });
+}
+
+// Show error state on cards
+function showCardsErrorState() {
+    const cards = document.querySelectorAll('.travel-stats .stat-card');
+    cards.forEach((card, index) => {
+        const numberElement = card.querySelector('.stat-number');
+        const labelElement = card.querySelector('.stat-label');
+        
+        if (numberElement) {
+            numberElement.textContent = '—';
+        }
+        if (labelElement) {
+            labelElement.textContent = 'Feil ved lasting av data';
+        }
+    });
+}
+
+// Update the dynamic cards with new data
+function updateDynamicCards(stats) {
+    const cards = document.querySelectorAll('.travel-stats .stat-card');
+    
+    if (cards.length >= 3 && stats) {
+        // Card 1: Most used airlines
+        const card1 = cards[0];
+        const card1Title = card1.querySelector('h3');
+        const card1Number = card1.querySelector('.stat-number');
+        const card1Label = card1.querySelector('.stat-label');
+        
+        if (card1Title) card1Title.textContent = stats.mostUsedAirlines.title;
+        if (card1Number) {
+            card1Number.textContent = stats.mostUsedAirlines.primary.name !== 'Ingen data' 
+                ? stats.mostUsedAirlines.primary.name 
+                : '—';
+            // Adjust font size for longer airline names
+            if (stats.mostUsedAirlines.primary.name.length > 15) {
+                card1Number.style.fontSize = '1.5rem';
+            }
+        }
+        if (card1Label) {
+            let label = '';
+            if (stats.mostUsedAirlines.primary.count > 0) {
+                label = `${stats.mostUsedAirlines.primary.count} reiser`;
+                
+                // Add runner-ups
+                if (stats.mostUsedAirlines.secondary && stats.mostUsedAirlines.secondary.length > 0) {
+                    const runnerUps = stats.mostUsedAirlines.secondary
+                        .map(airline => `${airline.name} (${airline.count})`)
+                        .join(', ');
+                    label += `\\n2. og 3.: ${runnerUps}`;
+                }
+            } else {
+                label = 'Ingen flyreiser funnet';
+            }
+            card1Label.textContent = label;
+            card1Label.style.whiteSpace = 'pre-line';
+        }
+        
+        // Card 2: Most visited destination
+        const card2 = cards[1];
+        const card2Title = card2.querySelector('h3');
+        const card2Number = card2.querySelector('.stat-number');
+        const card2Label = card2.querySelector('.stat-label');
+        
+        if (card2Title) card2Title.textContent = stats.mostVisitedDestination.title;
+        if (card2Number) {
+            card2Number.textContent = stats.mostVisitedDestination.destination.name !== 'Ingen data' 
+                ? stats.mostVisitedDestination.destination.name 
+                : '—';
+        }
+        if (card2Label) {
+            card2Label.textContent = stats.mostVisitedDestination.count > 0 
+                ? `${stats.mostVisitedDestination.count} besøk`
+                : 'Ingen destinasjoner funnet';
+        }
+        
+        // Card 3: Flight metrics  
+        const card3 = cards[2];
+        const card3Title = card3.querySelector('h3');
+        const card3Number = card3.querySelector('.stat-number');
+        const card3Label = card3.querySelector('.stat-label');
+        
+        if (card3Title) card3Title.textContent = stats.flightMetrics.title;
+        if (card3Number) {
+            card3Number.textContent = stats.flightMetrics.value.toLocaleString();
+        }
+        if (card3Label) {
+            card3Label.textContent = stats.flightMetrics.subtitle;
+        }
     }
 }
 
@@ -590,4 +745,4 @@ function redirectToLogin() {
     window.location.href = '/login';
 }
 
-console.log('Secure Dashboard script loaded - Authorization Fixed!');
+console.log('Dashboard with Dynamic Statistics loaded!');

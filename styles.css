@@ -913,3 +913,117 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Dynamic Cards Enhancements */
+.travel-stats {
+    margin-bottom: 2rem;
+}
+
+.travel-stats .stat-card {
+    position: relative;
+    transition: all 0.3s ease;
+    min-height: 120px;
+}
+
+.travel-stats .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.travel-stats .stat-card h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.5rem;
+}
+
+.travel-stats .stat-card .stat-number {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0.5rem 0;
+    line-height: 1.2;
+    min-height: 2.25rem;
+    display: flex;
+    align-items: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.travel-stats .stat-card .stat-number.small-text {
+    font-size: 1.25rem;
+}
+
+.travel-stats .stat-card .stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+    white-space: pre-line;
+    min-height: 2rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Loading states for cards */
+.travel-stats .stat-card.loading {
+    opacity: 0.6;
+}
+
+.travel-stats .stat-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    width: 20px;
+    height: 20px;
+    margin-top: -10px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Error states for cards */
+.travel-stats .stat-card.error {
+    border-left: 4px solid #ef4444;
+    background-color: #fef2f2;
+}
+
+.travel-stats .stat-card.error .stat-number {
+    color: #dc2626;
+}
+
+.travel-stats .stat-card.error .stat-label {
+    color: #ef4444;
+}
+
+/* Responsive adjustments for dynamic cards */
+@media (max-width: 768px) {
+    .travel-stats .stat-card .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .travel-stats .stat-card .stat-number.small-text {
+        font-size: 1.125rem;
+    }
+    
+    .travel-stats .stat-card h3 {
+        font-size: 0.75rem;
+    }
+    
+    .travel-stats .stat-card .stat-label {
+        font-size: 0.75rem;
+    }
+}
+
+/* Animation keyframes for loading states */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
