@@ -1,4 +1,4 @@
-/* Clean, Modern Dashboard Styles for G-Travel */
+/* Clean, Modern Dashboard Styles for G-Travel - FIXED VERSION */
 
 * {
     box-sizing: border-box;
@@ -25,18 +25,20 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar - Dark Blue Theme */
+/* FIXED: Sidebar - Clean white with only header in dark blue */
 .sidebar {
     width: 256px;
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-    border-right: 1px solid #1e40af;
+    background: white;
+    border-right: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
+/* FIXED: Only the header gets the custom dark blue */
 .sidebar-header {
     padding: 1.5rem;
+    background: #15104b !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -53,8 +55,10 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    background: white;
 }
 
+/* FIXED: Remove blue background from Reports button */
 .nav-item {
     display: flex;
     align-items: center;
@@ -66,16 +70,20 @@ body {
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 .nav-item:hover {
     background: #f3f4f6;
     color: #374151;
+    border-color: #e5e7eb;
 }
 
 .nav-item.active {
-    background: #f3f4f6;
-    color: #111827;
+    background: #f8fafc;
+    color: #15104b;
+    border-color: #15104b;
+    font-weight: 600;
 }
 
 .sidebar-footer {
@@ -84,6 +92,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    background: white;
 }
 
 .user-info {
@@ -92,6 +101,7 @@ body {
     gap: 0.75rem;
 }
 
+/* FIXED: Remove blue background from user avatar */
 .user-avatar {
     width: 32px;
     height: 32px;
@@ -103,6 +113,7 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     color: #6b7280;
+    border: 2px solid #d1d5db;
 }
 
 .user-details {
@@ -132,8 +143,8 @@ body {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: none;
-    border: none;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
     color: #6b7280;
     font-size: 0.875rem;
     border-radius: 6px;
@@ -142,8 +153,9 @@ body {
 }
 
 .logout-btn:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #ef4444;
+    color: white;
+    border-color: #dc2626;
 }
 
 /* Main Content */
@@ -170,7 +182,7 @@ body {
     font-size: 0.875rem;
 }
 
-/* Controls Bar */
+/* FIXED: Controls Bar with better filter state management */
 .controls-bar {
     display: flex;
     justify-content: space-between;
@@ -208,11 +220,11 @@ body {
 
 .search-box input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+    border-color: #15104b;
+    box-shadow: 0 0 0 3px rgba(21, 16, 75, 0.1);
 }
 
-/* Modern Date Filter Styles */
+/* FIXED: Date Filter Panel */
 .date-filter {
     background: white;
     border: 1px solid #e5e7eb;
@@ -287,17 +299,13 @@ body {
 
 .date-group input[type="date"]:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+    border-color: #15104b;
+    box-shadow: 0 0 0 3px rgba(21, 16, 75, 0.1);
 }
 
-.date-group input[type="date"]:hover {
-    border-color: #9ca3af;
-}
-
-/* Apply Filter Button */
+/* FIXED: Apply Filter Button - Only this should be blue when clicked */
 .apply-filter {
-    background: #3b82f6;
+    background: #15104b;
     color: white;
     border: none;
     padding: 0.625rem 1.25rem;
@@ -311,16 +319,16 @@ body {
 }
 
 .apply-filter:hover {
-    background: #2563eb;
+    background: #0f0c3a;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgb(59 130 246 / 0.2);
+    box-shadow: 0 4px 8px rgba(21, 16, 75, 0.2);
 }
 
 .apply-filter:active {
     transform: translateY(0);
 }
 
-/* Quick Filter Buttons */
+/* FIXED: Quick Filter Buttons - Different styling when active */
 .quick-filters {
     display: flex;
     gap: 0.75rem;
@@ -345,10 +353,12 @@ body {
     transform: translateY(-1px);
 }
 
+/* FIXED: When quick filter is active, use different color than apply button */
 .quick-filter.active {
-    background: #3b82f6;
+    background: #065f46;
     color: white;
-    border-color: #3b82f6;
+    border-color: #065f46;
+    box-shadow: 0 2px 4px rgba(6, 95, 70, 0.2);
 }
 
 /* Filter Toggle Button */
@@ -374,8 +384,8 @@ body {
 
 .filter-toggle.active {
     background: #eff6ff;
-    border-color: #3b82f6;
-    color: #3b82f6;
+    border-color: #15104b;
+    color: #15104b;
 }
 
 .refresh-btn {
@@ -398,12 +408,140 @@ body {
     border-color: #9ca3af;
 }
 
+/* REDESIGNED: Enhanced Travel Statistics Cards */
+.travel-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.travel-stats .stat-card {
+    position: relative;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    min-height: 180px;
+    overflow: hidden;
+}
+
+/* Add decorative element */
+.travel-stats .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #15104b, #1e40af, #3b82f6);
+}
+
+.travel-stats .stat-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+    border-color: #15104b;
+}
+
+.travel-stats .stat-card h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Add icons to headers */
+.travel-stats .stat-card h3::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.travel-stats .stat-card:nth-child(1) h3::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2315104b' viewBox='0 0 24 24'%3E%3Cpath d='M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z'/%3E%3C/svg%3E");
+}
+
+.travel-stats .stat-card:nth-child(2) h3::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2315104b' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E");
+}
+
+.travel-stats .stat-card:nth-child(3) h3::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2315104b' viewBox='0 0 24 24'%3E%3Cpath d='M3 11h8V3H3v8zm2-6h4v4H5V5zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM18 13h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3z'/%3E%3C/svg%3E");
+}
+
+.travel-stats .stat-card .stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 1rem 0;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #15104b, #1e40af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+}
+
+.travel-stats .stat-card .stat-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    line-height: 1.4;
+    margin-bottom: 1.5rem;
+    min-height: 2rem;
+}
+
+/* ADDED: Card Action Buttons */
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.card-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #475569;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+    background: #15104b;
+    color: white;
+    border-color: #15104b;
+    transform: translateY(-1px);
+}
+
+.card-action-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Files Section */
 .files-section {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
     overflow: hidden;
+    margin-bottom: 3rem;
 }
 
 .section-header {
@@ -604,7 +742,7 @@ body {
     width: 32px;
     height: 32px;
     border: 3px solid #f3f4f6;
-    border-top: 3px solid #3b82f6;
+    border-top: 3px solid #15104b;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem auto;
@@ -628,40 +766,15 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* Stats Grid */
+/* Bottom Stats Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
 }
 
-/* Bottom stats need more spacing from files */
 .stats-grid:last-child {
     margin-top: 3rem;
-}
-
-/* Travel Statistics specific styling */
-.travel-stats {
-    margin-bottom: 2.5rem;
-}
-
-.travel-stats .stat-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
-    transition: all 0.2s ease;
-}
-
-.travel-stats .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
-}
-
-.travel-stats .stat-number {
-    color: #3b82f6;
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin: 0.5rem 0 0.25rem 0;
 }
 
 .stat-card {
@@ -746,9 +859,10 @@ body {
 .modal-content {
     background: white;
     border-radius: 12px;
-    max-width: 90vw;
+    max-width: 95vw;
     max-height: 90vh;
-    width: 800px;
+    width: 1200px;
+    height: 800px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
@@ -815,16 +929,18 @@ body {
     overflow: auto;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
+    max-height: 600px;
 }
 
 .preview-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.8rem;
 }
 
 .preview-table th {
     background: #f9fafb;
-    padding: 0.75rem;
+    padding: 0.5rem;
     text-align: left;
     font-size: 0.75rem;
     font-weight: 600;
@@ -834,13 +950,15 @@ body {
     border-bottom: 1px solid #e5e7eb;
     position: sticky;
     top: 0;
+    white-space: nowrap;
 }
 
 .preview-table td {
-    padding: 0.75rem;
+    padding: 0.5rem;
     border-bottom: 1px solid #f3f4f6;
     font-size: 0.875rem;
     color: #111827;
+    white-space: nowrap;
 }
 
 .preview-table tr:hover {
@@ -900,6 +1018,10 @@ body {
         flex-direction: column;
         align-items: stretch;
     }
+    
+    .travel-stats {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
@@ -914,308 +1036,4 @@ body {
     .stats-grid {
         grid-template-columns: 1fr;
     }
-}
-
-/* Dynamic Cards Enhancements */
-.travel-stats {
-    margin-bottom: 2rem;
-}
-
-.travel-stats .stat-card {
-    position: relative;
-    transition: all 0.3s ease;
-    min-height: 120px;
-}
-
-.travel-stats .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.travel-stats .stat-card h3 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    margin-bottom: 0.5rem;
-}
-
-.travel-stats .stat-card .stat-number {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0.5rem 0;
-    line-height: 1.2;
-    min-height: 2.25rem;
-    display: flex;
-    align-items: center;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-.travel-stats .stat-card .stat-number.small-text {
-    font-size: 1.25rem;
-}
-
-.travel-stats .stat-card .stat-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    line-height: 1.4;
-    white-space: pre-line;
-    min-height: 2rem;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Loading states for cards */
-.travel-stats .stat-card.loading {
-    opacity: 0.6;
-}
-
-.travel-stats .stat-card.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 1rem;
-    width: 20px;
-    height: 20px;
-    margin-top: -10px;
-    border: 2px solid #f3f4f6;
-    border-top: 2px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-/* Error states for cards */
-.travel-stats .stat-card.error {
-    border-left: 4px solid #ef4444;
-    background-color: #fef2f2;
-}
-
-.travel-stats .stat-card.error .stat-number {
-    color: #dc2626;
-}
-
-.travel-stats .stat-card.error .stat-label {
-    color: #ef4444;
-}
-
-/* Responsive adjustments for dynamic cards */
-@media (max-width: 768px) {
-    .travel-stats .stat-card .stat-number {
-        font-size: 1.5rem;
-    }
-    
-    .travel-stats .stat-card .stat-number.small-text {
-        font-size: 1.125rem;
-    }
-    
-    .travel-stats .stat-card h3 {
-        font-size: 0.75rem;
-    }
-    
-    .travel-stats .stat-card .stat-label {
-        font-size: 0.75rem;
-    }
-}
-
-/* Animation keyframes for loading states */
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* ENHANCED CARDS - Better styling for travel stats */
-.travel-stats .stat-card {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
-    transition: all 0.3s ease;
-    min-height: 140px;
-    overflow: hidden;
-}
-
-.travel-stats .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-}
-
-.travel-stats .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    border-color: #3b82f6;
-}
-
-.travel-stats .stat-card h3 {
-    font-size: 0.75rem !important;
-    font-weight: 700 !important;
-    color: #6b7280 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem !important;
-}
-
-.travel-stats .stat-card .stat-number {
-    font-size: 2.25rem !important;
-    font-weight: 800 !important;
-    color: #111827 !important;
-    margin: 0.5rem 0 1rem 0 !important;
-    line-height: 1.1 !important;
-    background: linear-gradient(135deg, #1f2937, #374151);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.travel-stats .stat-card .stat-label {
-    font-size: 0.875rem !important;
-    color: #6b7280 !important;
-    line-height: 1.4 !important;
-    margin-bottom: 1rem !important;
-}
-
-/* Dark Blue Sidebar Theme Override */
-.nav-item {
-    color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.nav-item:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-    transform: translateX(4px);
-}
-
-.nav-item.active {
-    background: rgba(255, 255, 255, 0.15) !important;
-    color: white !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.nav-item svg {
-    transition: transform 0.2s ease;
-}
-
-.nav-item:hover svg {
-    transform: scale(1.1);
-}
-
-.sidebar-footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-
-.user-avatar {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.user-name {
-    color: white !important;
-}
-
-.user-company {
-    color: rgba(255, 255, 255, 0.7) !important;
-}
-
-.logout-btn {
-    background: rgba(239, 68, 68, 0.1) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
-}
-
-.logout-btn:hover {
-    background: rgba(239, 68, 68, 0.2) !important;
-    border-color: rgba(239, 68, 68, 0.5) !important;
-    color: white !important;
-}
-
-/* SIDEBAR WHITE OVERRIDE - Only header should be dark */
-.sidebar {
-    background: white !important;
-    border-right: 1px solid #e5e7eb !important;
-}
-
-.sidebar-nav {
-    background: white !important;
-}
-
-.nav-item {
-    color: #6b7280 !important;
-}
-
-.nav-item:hover {
-    background: #f3f4f6 !important;
-    color: #111827 !important;
-    transform: none !important;
-}
-
-.nav-item.active {
-    background: #3b82f6 !important;
-    color: white !important;
-    box-shadow: none !important;
-}
-
-.sidebar-footer {
-    background: white !important;
-    border-top: 1px solid #e5e7eb !important;
-}
-
-.user-avatar {
-    background: #3b82f6 !important;
-    border: none !important;
-}
-
-.user-name {
-    color: #111827 !important;
-}
-
-.user-company {
-    color: #6b7280 !important;
-}
-
-.logout-btn {
-    background: #f3f4f6 !important;
-    color: #6b7280 !important;
-    border: 1px solid #e5e7eb !important;
-}
-
-.logout-btn:hover {
-    background: #ef4444 !important;
-    color: white !important;
-    border-color: #dc2626 !important;
-}
-
-/* BIGGER PREVIEW MODAL */
-.preview-modal .modal-content {
-    max-width: 95vw !important;
-    max-height: 90vh !important;
-    width: 1200px !important;
-    height: 800px !important;
-}
-
-.preview-table-container {
-    max-height: 600px !important;
-    overflow: auto;
-}
-
-.preview-table {
-    font-size: 0.8rem !important;
-}
-
-.preview-table th,
-.preview-table td {
-    padding: 0.5rem !important;
-    white-space: nowrap;
 }
