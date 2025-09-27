@@ -24,23 +24,26 @@ console.log('🚀 Starting G Travel Authentication Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔗 Base URL: ${process.env.BASE_URL}`);
 
-// CSP configuration for both development and production
+// CSP configuration - RELAXED for development to fix preview issues
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https://login.microsoftonline.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "data:"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "data:"],
+            imgSrc: ["'self'", "data:", "https:", "blob:"],
+            connectSrc: ["'self'", "https://login.microsoftonline.com", "https://*.azurewebsites.net"],
             formAction: ["'self'", "https://login.microsoftonline.com"],
             frameSrc: ["https://login.microsoftonline.com"],
-            fontSrc: ["'self'"]
+            fontSrc: ["'self'", "data:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'", "data:", "blob:"]
         }
     },
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false
 }));
-console.log('🛡️ CSP enabled with development-friendly policies');
+console.log('🛡️ CSP enabled with relaxed policies for development');
 
 // CORS configuration
 app.use(cors({

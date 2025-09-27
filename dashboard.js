@@ -201,7 +201,7 @@ function getCardType(index) {
     return types[index] || 'unknown';
 }
 
-// ENHANCED: Export card data functionality
+// ENHANCED: Export card data functionality with airline name mapping
 async function downloadCardData(cardType) {
     try {
         const data = travelStatsData[cardType];
@@ -219,7 +219,9 @@ async function downloadCardData(cardType) {
                 csvContent = 'Airline Code,Airline Name,Flight Count,Usage Percentage\n';
                 if (data.details && Array.isArray(data.details)) {
                     data.details.forEach(item => {
-                        csvContent += `"${item.code}","${item.name}","${item.count}","${item.percentage}%"\n`;
+                        // Apply airline name mapping if needed
+                        const airlineName = getAirlineNameFallback(item.code) || item.name || item.code;
+                        csvContent += `"${item.code}","${airlineName}","${item.count}","${item.percentage}%"\n`;
                     });
                 }
                 filename = 'travel_airlines_report.csv';
@@ -229,7 +231,9 @@ async function downloadCardData(cardType) {
                 csvContent = 'Destination Code,Destination Name,Visit Count,Usage Percentage\n';
                 if (data.details && Array.isArray(data.details)) {
                     data.details.forEach(item => {
-                        csvContent += `"${item.code}","${item.name}","${item.count}","${item.percentage}%"\n`;
+                        // Apply destination name mapping if needed
+                        const destName = getDestinationNameFallback(item.code) || item.name || item.code;
+                        csvContent += `"${item.code}","${destName}","${item.count}","${item.percentage}%"\n`;
                     });
                 }
                 filename = 'travel_destinations_report.csv';
@@ -356,26 +360,30 @@ function generateDetailTable(cardType, data) {
     switch (cardType) {
         case 'airlines':
             headerRow = '<tr><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map(item => 
-                `<tr>
+            bodyRows = data.details.map(item => {
+                // Apply name mapping for display
+                const airlineName = getAirlineNameFallback(item.code) || item.name || item.code;
+                return `<tr>
                     <td><strong>${item.code}</strong></td>
-                    <td>${item.name}</td>
+                    <td>${airlineName}</td>
                     <td>${item.count}</td>
                     <td>${item.percentage}%</td>
-                </tr>`
-            ).join('');
+                </tr>`;
+            }).join('');
             break;
             
         case 'destinations':
             headerRow = '<tr><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map(item => 
-                `<tr>
+            bodyRows = data.details.map(item => {
+                // Apply name mapping for display
+                const destName = getDestinationNameFallback(item.code) || item.name || item.code;
+                return `<tr>
                     <td><strong>${item.code}</strong></td>
-                    <td>${item.name}</td>
+                    <td>${destName}</td>
                     <td>${item.count}</td>
                     <td>${item.percentage}%</td>
-                </tr>`
-            ).join('');
+                </tr>`;
+            }).join('');
             break;
             
         case 'routes':
@@ -497,8 +505,84 @@ function generateMockStatsData() {
     };
 }
 
+// FALLBACK MAPPINGS: Airline and destination names for better UX
+function getAirlineNameFallback(code) {
+    const airlineMap = {
+        'WF': 'Widerøe',
+        'SK': 'SAS',
+        'DY': 'Norwegian',
+        'KL': 'KLM',
+        'LH': 'Lufthansa',
+        'BA': 'British Airways',
+        'AF': 'Air France',
+        'LN': 'Linjeflyg',
+        'FI': 'Icelandair',
+        'QF': 'Qantas',
+        'EK': 'Emirates',
+        'LX': 'Swiss International',
+        'OS': 'Austrian Airlines',
+        'TP': 'TAP Air Portugal'
+    };
+    
+    return airlineMap[code?.toUpperCase()] || code;
+}
+
+function getDestinationNameFallback(code) {
+    const airportMap = {
+        'OSL': 'Oslo Lufthavn',
+        'BOO': 'Bodø Lufthavn', 
+        'TRD': 'Trondheim Lufthavn',
+        'BGO': 'Bergen Lufthavn',
+        'SVG': 'Stavanger Lufthavn',
+        'AES': 'Ålesund Lufthavn',
+        'KRS': 'Kristiansand Lufthavn',
+        'TOS': 'Tromsø Lufthavn',
+        'EVE': 'Evenes Lufthavn',
+        'ALF': 'Alta Lufthavn',
+        'LKN': 'Leknes Lufthavn',
+        'LYR': 'Longyearbyen Lufthavn',
+        'CPH': 'København',
+        'ARN': 'Stockholm',
+        'LHR': 'London Heathrow',
+        'AMS': 'Amsterdam',
+        'CDG': 'Paris Charles de Gaulle',
+        'FRA': 'Frankfurt'
+    };
+    
+    return airportMap[code?.toUpperCase()] || code;
+}
+
+// ENHANCED: Update stats cards with name mapping
 function updateStatsCards(data) {
     try {
+        // Apply name mapping to airline data
+        if (data.mostUsedAirline && data.mostUsedAirline.details) {
+            data.mostUsedAirline.details = data.mostUsedAirline.details.map(airline => ({
+                ...airline,
+                name: getAirlineNameFallback(airline.code) || airline.name || airline.code
+            }));
+            
+            // Update the primary airline display
+            if (data.mostUsedAirline.details[0]) {
+                const primary = data.mostUsedAirline.details[0];
+                data.mostUsedAirline.label = `${primary.name}\n${primary.count} flights`;
+            }
+        }
+        
+        // Apply name mapping to destination data
+        if (data.mostVisitedDestination && data.mostVisitedDestination.details) {
+            data.mostVisitedDestination.details = data.mostVisitedDestination.details.map(dest => ({
+                ...dest,
+                name: getDestinationNameFallback(dest.code) || dest.name || dest.code
+            }));
+            
+            // Update the primary destination display
+            if (data.mostVisitedDestination.details[0]) {
+                const primary = data.mostVisitedDestination.details[0];
+                data.mostVisitedDestination.label = `${primary.name}\n${primary.count} visits`;
+            }
+        }
+        
         // Store data for export functionality
         travelStatsData = {
             airlines: data.mostUsedAirline,
@@ -524,7 +608,7 @@ function updateStatsCards(data) {
             updateCard(cards[2], data.uniqueRoutes);
         }
 
-        console.log('✅ Stats cards updated successfully');
+        console.log('✅ Stats cards updated successfully with name mapping');
         
     } catch (error) {
         console.error('❌ Error updating stats cards:', error);
