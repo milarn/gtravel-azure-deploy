@@ -325,8 +325,11 @@ async function checkAuth() {
             }
         });
         
+        console.log('Auth response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('Auth response data:', data);
             
             if (data?.authenticated === true && data?.user) {
                 currentUser = data.user;
@@ -335,7 +338,13 @@ async function checkAuth() {
                 updateUserInterface();
                 await loadFiles();
                 return;
+            } else {
+                console.log('Authentication data invalid:', data);
             }
+        } else {
+            console.log('Auth response not ok:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.log('Error response:', errorText);
         }
         
         console.log('Authentication failed');
