@@ -3,6 +3,53 @@ const express = require('express');
 const { ConfidentialClientApplication } = require('@azure/msal-node');
 const router = express.Router();
 
+// FALLBACK NAME MAPPINGS for airline and destination names
+function getAirlineNameFallback(code) {
+    const airlineMap = {
+        'WF': 'Widerøe',
+        'SK': 'SAS',
+        'DY': 'Norwegian',
+        'KL': 'KLM',
+        'LH': 'Lufthansa',
+        'BA': 'British Airways',
+        'AF': 'Air France',
+        'LN': 'Linjeflyg',
+        'FI': 'Icelandair',
+        'QF': 'Qantas',
+        'EK': 'Emirates',
+        'LX': 'Swiss International',
+        'OS': 'Austrian Airlines',
+        'TP': 'TAP Air Portugal'
+    };
+    
+    return airlineMap[code?.toUpperCase()] || code;
+}
+
+function getDestinationNameFallback(code) {
+    const airportMap = {
+        'OSL': 'Oslo Lufthavn',
+        'BOO': 'Bodø Lufthavn', 
+        'TRD': 'Trondheim Lufthavn',
+        'BGO': 'Bergen Lufthavn',
+        'SVG': 'Stavanger Lufthavn',
+        'AES': 'Ålesund Lufthavn',
+        'KRS': 'Kristiansand Lufthavn',
+        'TOS': 'Tromsø Lufthavn',
+        'EVE': 'Evenes Lufthavn',
+        'ALF': 'Alta Lufthavn',
+        'LKN': 'Leknes Lufthavn',
+        'LYR': 'Longyearbyen Lufthavn',
+        'CPH': 'København',
+        'ARN': 'Stockholm',
+        'LHR': 'London Heathrow',
+        'AMS': 'Amsterdam',
+        'CDG': 'Paris Charles de Gaulle',
+        'FRA': 'Frankfurt'
+    };
+    
+    return airportMap[code?.toUpperCase()] || code;
+}
+
 // MSAL configuration for multi-tenant
 const msalConfig = {
     auth: {
@@ -308,10 +355,26 @@ router.get('/api/files', async (req, res) => {
             
             console.log(`✅ Retrieved ${functionResult.files?.length || 0} files from Azure Function`);
             
-            // Return the function result directly
+            // Return the function result with proper data structure
+            const files = functionResult.files || [];
+            
+            // Ensure each file has the proper structure expected by frontend
+            const formattedFiles = files.map(file => ({
+                id: file.id || file.fileId || `${Date.now()}-${Math.random()}`,
+                fileName: file.fileName || file.name || 'Unknown File',
+                fileId: file.fileId || file.id || `${Date.now()}-${Math.random()}`,
+                category: file.category || 'Invoice Data',
+                size: file.size || 'Unknown',
+                lastUpdated: file.lastUpdated || new Date().toISOString(),
+                accno: file.accno || 'N/A',
+                recordCount: file.recordCount || 0,
+                owner: file.owner || 'Company',
+                status: file.status || 'available'
+            }));
+            
             res.json({
-                files: functionResult.files || [],
-                totalFiles: functionResult.totalFiles || 0,
+                files: formattedFiles,
+                totalFiles: formattedFiles.length,
                 companyName: functionResult.companyName || user.company,
                 dateRange: functionResult.dateRange,
                 debug: functionResult.debug
@@ -379,11 +442,17 @@ router.get('/api/stats', async (req, res) => {
                     mostUsedAirline: {
                         value: functionResult.stats?.mostUsedAirlines?.primary?.code || 'N/A',
                         label: functionResult.stats?.mostUsedAirlines?.primary ? 
-                            `${functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count} flights` : 
+                            `${getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count} flights` : 
                             'No data available',
                         details: functionResult.stats?.mostUsedAirlines?.primary ? [
-                            functionResult.stats.mostUsedAirlines.primary,
-                            ...(functionResult.stats.mostUsedAirlines.secondary || [])
+                            {
+                                ...functionResult.stats.mostUsedAirlines.primary,
+                                name: getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name
+                            },
+                            ...(functionResult.stats.mostUsedAirlines.secondary || []).map(airline => ({
+                                ...airline,
+                                name: getAirlineNameFallback(airline.code) || airline.name
+                            }))
                         ].map((airline, index) => ({
                             code: airline.code,
                             name: airline.name,
@@ -394,11 +463,11 @@ router.get('/api/stats', async (req, res) => {
                     mostVisitedDestination: {
                         value: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
                         label: functionResult.stats?.mostVisitedDestination ? 
-                            `${functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count} visits` : 
+                            `${getDestinationNameFallback(functionResult.stats.mostVisitedDestination.destination.code) || functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count} visits` : 
                             'No data available',
                         details: [{
                             code: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
-                            name: functionResult.stats?.mostVisitedDestination?.destination?.name || 'No data',
+                            name: getDestinationNameFallback(functionResult.stats?.mostVisitedDestination?.destination?.code) || functionResult.stats?.mostVisitedDestination?.destination?.name || 'No data',
                             count: functionResult.stats?.mostVisitedDestination?.count || 0,
                             percentage: functionResult.totalFlights > 0 ? 
                                 Math.round((functionResult.stats?.mostVisitedDestination?.count || 0) / functionResult.totalFlights * 100) : 0

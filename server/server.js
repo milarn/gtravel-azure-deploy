@@ -24,26 +24,37 @@ console.log('🚀 Starting G Travel Authentication Server...');
 console.log(`📍 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔗 Base URL: ${process.env.BASE_URL}`);
 
-// CSP configuration - RELAXED for development to fix preview issues
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "data:"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "data:"],
-            imgSrc: ["'self'", "data:", "https:", "blob:"],
-            connectSrc: ["'self'", "https://login.microsoftonline.com", "https://*.azurewebsites.net"],
-            formAction: ["'self'", "https://login.microsoftonline.com"],
-            frameSrc: ["https://login.microsoftonline.com"],
-            fontSrc: ["'self'", "data:"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'", "data:", "blob:"]
-        }
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false
-}));
-console.log('🛡️ CSP enabled with relaxed policies for development');
+// CSP configuration - DISABLED for development to fix all inline issues
+if (process.env.NODE_ENV === 'development') {
+    // Disable CSP entirely in development
+    app.use(helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false
+    }));
+    console.log('🛡️ CSP disabled for development - all inline scripts allowed');
+} else {
+    // Production CSP
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "data:"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "data:"],
+                imgSrc: ["'self'", "data:", "https:", "blob:"],
+                connectSrc: ["'self'", "https://login.microsoftonline.com", "https://*.azurewebsites.net"],
+                formAction: ["'self'", "https://login.microsoftonline.com"],
+                frameSrc: ["https://login.microsoftonline.com"],
+                fontSrc: ["'self'", "data:"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'", "data:", "blob:"]
+            }
+        },
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false
+    }));
+    console.log('🛡️ CSP enabled for production');
+}
 
 // CORS configuration
 app.use(cors({
