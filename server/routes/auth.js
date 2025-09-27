@@ -328,6 +328,8 @@ router.get('/callback', async (req, res) => {
             console.log(`📁 User has ${fileCount} personal files + company shared files`);
             console.log(`✅ Access level correctly set to: ${companyAccess.accessLevel}`);
             
+            console.log(`🔄 REDIRECTING TO DASHBOARD!`);
+            console.log(`🔍 💾 CALLBACK DEBUG END - SHOULD GO TO DASHBOARD 🔍 💾`);
             res.redirect('/dashboard');
         });
         

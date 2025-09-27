@@ -52,13 +52,25 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Rate limiting
+// Rate limiting with custom keyGenerator for Azure App Service
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // Custom keyGenerator to handle Azure App Service IP format (IP:PORT)
+    keyGenerator: (req) => {
+        // Extract just the IP part before the colon (if present)
+        const forwarded = req.get('X-Forwarded-For');
+        if (forwarded) {
+            const ip = forwarded.split(',')[0].trim().split(':')[0];
+            return ip;
+        }
+        // Fallback to req.ip and extract IP part
+        const reqIp = req.ip || req.connection.remoteAddress || '127.0.0.1';
+        return reqIp.split(':')[0];
+    }
 });
 app.use('/auth/', limiter);
 
@@ -74,27 +86,39 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('combined'));
 }
 
-// Session configuration
+// Session configuration - Enhanced for Azure App Service
 const sessionConfig = {
     secret: process.env.SESSION_SECRET,
     name: process.env.SESSION_NAME,
-    resave: true,
-    saveUninitialized: true,
+    resave: true,  // Force session save even if unmodified
+    saveUninitialized: false,  // Don't save empty sessions
+    rolling: true,  // Reset expiration on each request
     cookie: {
-        secure: false, // Set to false for localhost testing
+        secure: false, // HTTP for development, Azure handles HTTPS termination
         httpOnly: true,
-        maxAge: parseInt(process.env.SESSION_MAX_AGE),
+        maxAge: parseInt(process.env.SESSION_MAX_AGE) || 24 * 60 * 60 * 1000, // 24 hours default
         sameSite: 'lax'
     }
 };
 
 app.use(session(sessionConfig));
 
-// Debug middleware to log session info
+// Enhanced debug middleware to track session state
 app.use((req, res, next) => {
+    // Log auth routes
     if (req.path.includes('/auth/')) {
         console.log(`🔍 Session Debug - Path: ${req.path}, Session ID: ${req.session.id}, User: ${req.session.user ? 'Yes' : 'No'}`);
     }
+    
+    // Log dashboard access attempts with detailed session info
+    if (req.path === '/dashboard') {
+        console.log(`🏠 Dashboard Access - Session ID: ${req.session.id}`);
+        console.log(`🔑 User in session: ${req.session.user ? 'YES' : 'NO'}`);
+        if (req.session.user) {
+            console.log(`👤 User: ${req.session.user.email} (${req.session.user.company})`);
+        }
+    }
+    
     next();
 });
 
@@ -132,27 +156,7 @@ app.use('/auth', authRoutes);
 app.use('/api/function', functionProxyRoutes);
 console.log('🔒 Function proxy routes enabled: /api/function/*');
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        version: require('./package.json').version,
-        authentication: 'Entra ID ready'
-    });
-});
-
-// Debug endpoint
-app.get('/debug', (req, res) => {
-    console.log('🔍 Debug page requested');
-    res.sendFile(path.join(__dirname, '../debug.html'));
-});
-
-// REMOVED: Duplicate /user endpoint (use /auth/user instead)
-// REMOVED: Duplicate /logout endpoint (use /auth/logout instead)
-
-// Frontend routes (serve HTML files)
+// Frontend routes (serve HTML files) - BEFORE static files to ensure proper auth checks
 app.get('/', (req, res) => {
     if (req.session.user) {
         console.log(`✅ Root redirect: User ${req.session.user.email} already authenticated, redirecting to dashboard`);
@@ -182,6 +186,27 @@ app.get('/dashboard', (req, res) => {
         res.sendFile(path.join(__dirname, '../dashboard.html'));
     }
 });
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        version: require('./package.json').version,
+        authentication: 'Entra ID ready'
+    });
+});
+
+// Debug endpoint
+app.get('/debug', (req, res) => {
+    console.log('🔍 Debug page requested');
+    res.sendFile(path.join(__dirname, '../debug.html'));
+});
+
+// REMOVED: Duplicate /user endpoint (use /auth/user instead)
+// REMOVED: Duplicate /logout endpoint (use /auth/logout instead)
+// REMOVED: Duplicate frontend routes (moved above static files for proper execution order)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
