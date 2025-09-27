@@ -437,12 +437,20 @@ async function loadDynamicStats() {
             
             if (result && result.data) {
                 updateStatsCards(result.data);
+                // Show success message if real data
+                if (!result.error) {
+                    console.log('✅ Real data loaded from Azure Function');
+                }
             } else {
                 // Use mock data for demo
                 console.log('📊 Using mock statistics data');
                 updateStatsCards(generateMockStatsData());
             }
         } else {
+            console.error(`❌ Stats API failed: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Stats API error:', errorText);
+            
             // Use mock data for demo if API fails
             console.log('📊 Using mock statistics data (API failed)');
             updateStatsCards(generateMockStatsData());
@@ -673,13 +681,6 @@ async function loadFiles() {
             credentials: 'include'
         });
 
-        if (!response.ok) {
-            throw new Error(`File API call failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log('📋 Files result:', result);
-
         // Hide loading state
         if (loadingElement) loadingElement.style.display = 'none';
 
@@ -687,13 +688,31 @@ async function loadFiles() {
             const result = await response.json();
             console.log('📋 Files result:', result);
             
+            // Show success or warning messages
+            if (result.error) {
+                console.warn('⚠️ Files API returned with warning:', result.message);
+            } else if (result.files && result.files.length > 0) {
+                console.log('✅ Real data loaded from Azure Function');
+            }
+            
             if (result && result.files && result.files.length > 0) {
                 displayFiles(result.files);
                 if (totalFilesElement) {
                     totalFilesElement.textContent = result.files.length;
                 }
             } else {
-                if (noFilesMessage) noFilesMessage.style.display = 'block';
+                if (noFilesMessage) {
+                    noFilesMessage.style.display = 'block';
+                    if (result.error) {
+                        noFilesMessage.innerHTML = `
+                            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3>Data temporarily unavailable</h3>
+                            <p>${result.message || 'Please try again or contact support.'}</p>
+                        `;
+                    }
+                }
                 if (totalFilesElement) {
                     totalFilesElement.textContent = '0';
                 }
