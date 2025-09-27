@@ -17,6 +17,9 @@ const { validateConfig } = require('./config/validation');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - Required for Azure App Service to properly handle X-Forwarded-For headers
+app.set('trust proxy', 1);
+
 // Validate configuration on startup
 validateConfig();
 
