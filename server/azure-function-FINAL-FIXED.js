@@ -1,7 +1,7 @@
-// FIXED Azure Function - Use existing AIRLINENAME column instead of lookup
+// Azure Function - G Travel File Access with Dynamic Statistics (OPTIMIZED)
 const sql = require('mssql');
 
-// Database configuration (unchanged)
+// Database configuration
 const dbConfig = {
     server: process.env.DB_SERVER,
     database: process.env.DB_DATABASE,
@@ -89,11 +89,12 @@ module.exports = async function (context, req) {
 function getDateParameters(req) {
     // Default date range: Last 3 years to cover most data
     const defaultFromDate = new Date();
-    defaultFromDate.setFullYear(defaultFromDate.getFullYear() - 3);
+    defaultFromDate.setFullYear(defaultFromDate.getFullYear() - 3); // 3 years back
     
     const defaultToDate = new Date();
-    defaultToDate.setDate(defaultToDate.getDate() + 1);
+    defaultToDate.setDate(defaultToDate.getDate() + 1); // Tomorrow to include today
     
+    // Use provided dates or defaults
     const fromDateStr = req.query.fromDate;
     const toDateStr = req.query.toDate;
     
@@ -103,6 +104,7 @@ function getDateParameters(req) {
         fromDate = new Date(fromDateStr);
         toDate = new Date(toDateStr);
         
+        // Validate dates
         if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
             fromDate = defaultFromDate;
             toDate = defaultToDate;
@@ -119,11 +121,12 @@ function getDateParameters(req) {
     };
 }
 
-// FIXED: Get dynamic statistics using existing AIRLINENAME column
+// OPTIMIZED: Get dynamic statistics for dashboard cards
 async function getDynamicStats(context, req, companyDomain) {
     try {
         context.log(`📊 Getting dynamic stats for domain: ${companyDomain}`);
         
+        // Get company access
         const companyResult = await sql.query`
             SELECT AccNoList, CompanyName 
             FROM dbo.CompanyAccess 
@@ -139,6 +142,7 @@ async function getDynamicStats(context, req, companyDomain) {
             return;
         }
         
+        // FIXED: Properly parse AccNoList JSON
         let accNoList;
         try {
             const accNoListStr = companyResult.recordset[0].AccNoList;
@@ -156,6 +160,7 @@ async function getDynamicStats(context, req, companyDomain) {
         
         const { fromDate, toDate } = getDateParameters(req);
         
+        // Aggregate data from all AccNos
         let allFlightData = [];
         
         for (const accno of accNoList) {
@@ -165,13 +170,14 @@ async function getDynamicStats(context, req, companyDomain) {
                 const request = new sql.Request();
                 request.timeout = 30000;
                 
+                // FIXED: Ensure accno is treated as string
                 request.input('Accno', sql.NVarChar(50), String(accno));
                 request.input('FromDate', sql.Date, fromDate);
                 request.input('ToDate', sql.Date, toDate);
                 
                 const result = await request.execute('api_ExportInvoiceLines');
                 
-                // Filter only flight records and ensure we have airline names
+                // Filter only flight records (where CARRCD, FDESTCD, or TDESTCD is not null/empty)
                 const flightRecords = result.recordset.filter(record => 
                     (record.CARRCD && String(record.CARRCD).trim() !== '') ||
                     (record.FDESTCD && String(record.FDESTCD).trim() !== '') ||
@@ -183,13 +189,14 @@ async function getDynamicStats(context, req, companyDomain) {
                 
             } catch (accError) {
                 context.log.error(`❌ Error processing AccNo ${accno}:`, accError);
+                // Continue with other AccNos
             }
         }
         
         context.log(`📊 Total flight records collected: ${allFlightData.length}`);
         
-        // Calculate statistics using existing AIRLINENAME column
-        const stats = calculateDynamicStatsFromData(allFlightData, context);
+        // Calculate statistics
+        const stats = await calculateDynamicStats(allFlightData, context);
         
         context.res = {
             ...context.res,
@@ -210,25 +217,24 @@ async function getDynamicStats(context, req, companyDomain) {
     }
 }
 
-// FIXED: Calculate stats using existing AIRLINENAME column from data
-function calculateDynamicStatsFromData(flightData, context) {
+// OPTIMIZED: Calculate ALL statistics (not just top 3)
+async function calculateDynamicStats(flightData, context) {
     try {
         context.log(`🔢 Calculating stats from ${flightData.length} flight records`);
         
+        const totalFlights = flightData.length;
         const airlineStats = {};
         const destinationStats = {};
         
+        // Count airlines and destinations
         flightData.forEach(record => {
-            // Use existing AIRLINENAME column if available, fallback to CARRCD
-            const airlineName = record.AIRLINENAME && String(record.AIRLINENAME).trim() !== '' 
-                ? String(record.AIRLINENAME).trim() 
-                : (record.CARRCD ? String(record.CARRCD).trim() : 'Unknown');
-                
-            if (airlineName && airlineName !== 'Unknown') {
-                airlineStats[airlineName] = (airlineStats[airlineName] || 0) + 1;
+            // Count airlines (ensure string comparison)
+            if (record.CARRCD && String(record.CARRCD).trim() !== '') {
+                const carrier = String(record.CARRCD).trim().toUpperCase();
+                airlineStats[carrier] = (airlineStats[carrier] || 0) + 1;
             }
             
-            // Count destinations
+            // Count destinations (both from and to)
             if (record.FDESTCD && String(record.FDESTCD).trim() !== '') {
                 const dest = String(record.FDESTCD).trim().toUpperCase();
                 destinationStats[dest] = (destinationStats[dest] || 0) + 1;
@@ -241,78 +247,180 @@ function calculateDynamicStatsFromData(flightData, context) {
         
         context.log(`🛩️ Found ${Object.keys(airlineStats).length} unique airlines, ${Object.keys(destinationStats).length} unique destinations`);
         
-        // Get top 3 airlines (already have names from data)
-        const topAirlines = Object.entries(airlineStats)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 3)
-            .map(([name, count]) => ({ code: name, name: name, count: count }));
+        // Get ALL airlines sorted by count
+        const allAirlines = Object.entries(airlineStats)
+            .sort(([,a], [,b]) => b - a);
         
-        // Get most visited destination
-        const topDestination = Object.entries(destinationStats)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 1);
+        // Get airline names for ALL airlines
+        const allAirlinesWithNames = await getAirlineNames(allAirlines, context);
+        
+        // Calculate percentages for all airlines
+        const airlinesWithPercentages = allAirlinesWithNames.map(airline => ({
+            ...airline,
+            percentage: Math.round((airline.count / totalFlights) * 100)
+        }));
+        
+        // Get ALL destinations sorted by count
+        const allDestinations = Object.entries(destinationStats)
+            .sort(([,a], [,b]) => b - a);
+        
+        // Get destination names for ALL destinations
+        const allDestinationsWithNames = await Promise.all(
+            allDestinations.map(async ([code, count]) => {
+                const destInfo = await getDestinationName(code, context);
+                return {
+                    code: code,
+                    name: destInfo.name,
+                    count: count,
+                    percentage: Math.round((count / totalFlights) * 100)
+                };
+            })
+        );
         
         // Calculate unique routes
         const uniqueRoutes = new Set();
+        const routeDetails = [];
+        const routeCounts = {};
+        
         flightData.forEach(record => {
             if (record.FDESTCD && record.TDESTCD && 
                 String(record.FDESTCD).trim() !== '' && String(record.TDESTCD).trim() !== '') {
                 const from = String(record.FDESTCD).trim().toUpperCase();
                 const to = String(record.TDESTCD).trim().toUpperCase();
-                uniqueRoutes.add(`${from}-${to}`);
+                const route = `${from}-${to}`;
+                uniqueRoutes.add(route);
+                routeCounts[route] = (routeCounts[route] || 0) + 1;
             }
         });
         
-        const primaryAirline = topAirlines[0] || { code: 'N/A', name: 'Ingen data', count: 0 };
-        const topDest = topDestination[0] || ['N/A', 0];
+        // Convert route counts to array and sort
+        const topRoutes = Object.entries(routeCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 20) // Top 20 routes
+            .map(([route, count]) => {
+                const [from, to] = route.split('-');
+                return {
+                    route: route,
+                    from: from,
+                    to: to,
+                    frequency: count,
+                    lastUsed: new Date().toISOString().split('T')[0] // Would need actual date from data
+                };
+            });
         
-        context.log(`📈 Stats calculated - Top airline: ${primaryAirline.name}, Top destination: ${topDest[0]}, Unique routes: ${uniqueRoutes.size}`);
+        context.log(`📈 Stats calculated - Airlines: ${airlinesWithPercentages.length}, Destinations: ${allDestinationsWithNames.length}, Routes: ${uniqueRoutes.size}`);
         
         return {
             mostUsedAirlines: {
                 title: "Mest brukte flyselskap",
-                primary: primaryAirline,
-                secondary: topAirlines.slice(1, 3)
+                primary: airlinesWithPercentages[0] || { code: 'N/A', name: 'Ingen data', count: 0, percentage: 0 },
+                secondary: airlinesWithPercentages.slice(1, 3),
+                all: airlinesWithPercentages // ADDED: Return ALL airlines
             },
             mostVisitedDestination: {
                 title: "Mest besøkte destinasjon",
-                destination: { code: topDest[0], name: topDest[0] },
-                count: topDest[1]
+                destination: allDestinationsWithNames[0] ? {
+                    code: allDestinationsWithNames[0].code,
+                    name: allDestinationsWithNames[0].name
+                } : { code: 'N/A', name: 'Ingen data' },
+                count: allDestinationsWithNames[0]?.count || 0,
+                all: allDestinationsWithNames // ADDED: Return ALL destinations
             },
             flightMetrics: {
                 title: "Unike ruter",
                 value: uniqueRoutes.size,
-                subtitle: "Forskjellige flyreiser"
+                subtitle: "Forskjellige flyreiser",
+                topRoutes: topRoutes // ADDED: Return top routes
             }
         };
         
     } catch (error) {
-        context.log.error('💥 calculateDynamicStatsFromData error:', error);
-        return {
-            mostUsedAirlines: {
-                title: "Mest brukte flyselskap",
-                primary: { code: 'Error', name: 'Feil ved beregning', count: 0 },
-                secondary: []
-            },
-            mostVisitedDestination: {
-                title: "Mest besøkte destinasjon",
-                destination: { code: 'Error', name: 'Feil ved beregning' },
-                count: 0
-            },
-            flightMetrics: {
-                title: "Unike ruter",
-                value: 0,
-                subtitle: "Feil ved beregning"
-            }
-        };
+        context.log.error('💥 calculateDynamicStats error:', error);
+        throw error;
     }
 }
 
-// Other functions remain the same...
+// OPTIMIZED: Get airline names with batch processing
+async function getAirlineNames(topAirlines, context) {
+    try {
+        const result = [];
+        
+        // Batch process airline name lookups
+        const codes = topAirlines.map(([code]) => code);
+        
+        if (codes.length === 0) {
+            return result;
+        }
+        
+        try {
+            // Single query to get all airline names at once
+            const request = new sql.Request();
+            const placeholders = codes.map((_, i) => `@code${i}`).join(',');
+            
+            codes.forEach((code, i) => {
+                request.input(`code${i}`, sql.NVarChar(10), code);
+            });
+            
+            const query = `SELECT UPPER(AIRLCODE) as AIRLCODE, AIRLNAME 
+                          FROM dbo.TAS_AIRL 
+                          WHERE UPPER(AIRLCODE) IN (${placeholders})`;
+            
+            const airlineResult = await request.query(query);
+            
+            // Create a map for quick lookup
+            const nameMap = {};
+            airlineResult.recordset.forEach(row => {
+                nameMap[row.AIRLCODE] = row.AIRLNAME;
+            });
+            
+            // Build result with names
+            topAirlines.forEach(([code, count]) => {
+                result.push({
+                    code: code,
+                    name: nameMap[code] || code,
+                    count: count
+                });
+            });
+            
+        } catch (error) {
+            context.log.error('❌ Batch airline lookup failed, using fallback:', error);
+            // Fallback to code names
+            topAirlines.forEach(([code, count]) => {
+                result.push({
+                    code: code,
+                    name: code,
+                    count: count
+                });
+            });
+        }
+        
+        return result;
+    } catch (error) {
+        context.log.error('💥 getAirlineNames error:', error);
+        return [];
+    }
+}
+
+// Get destination name
+async function getDestinationName(destCode, context) {
+    if (!destCode) {
+        return { code: 'N/A', name: 'Ingen data' };
+    }
+    
+    // For now, just return the code
+    // You can add a destinations lookup table later
+    return {
+        code: destCode,
+        name: destCode
+    };
+}
+
+// Get available files
 async function getAvailableFiles(context, req, companyDomain) {
     try {
         context.log(`🔍 Getting files for domain: ${companyDomain}`);
         
+        // Get company access
         const companyResult = await sql.query`
             SELECT AccNoList, CompanyName, AccessLevel 
             FROM dbo.CompanyAccess 
@@ -329,6 +437,7 @@ async function getAvailableFiles(context, req, companyDomain) {
             return;
         }
         
+        // Parse AccNoList
         let accNoList;
         try {
             const accNoListStr = companyResult.recordset[0].AccNoList;
@@ -344,10 +453,15 @@ async function getAvailableFiles(context, req, companyDomain) {
         }
         
         const companyName = companyResult.recordset[0].CompanyName;
+        
+        context.log(`✅ Company: ${companyName}, AccNos: ${accNoList.join(', ')}`);
+        
+        // Get date parameters with defaults
         const { fromDate, toDate, isDefault } = getDateParameters(req);
         
         context.log(`📅 Date range: ${fromDate.toISOString().split('T')[0]} to ${toDate.toISOString().split('T')[0]} ${isDefault ? '(DEFAULT)' : '(USER SPECIFIED)'}`);
         
+        // Get summary for each AccNo
         const files = [];
         
         for (const accno of accNoList) {
@@ -358,6 +472,8 @@ async function getAvailableFiles(context, req, companyDomain) {
                 request.input('Accno', sql.NVarChar(50), String(accno));
                 request.input('FromDate', sql.Date, fromDate);
                 request.input('ToDate', sql.Date, toDate);
+                
+                context.log(`📞 Calling stored procedure for AccNo: ${accno}`);
                 
                 const result = await request.execute('api_ExportInvoiceLines');
                 
@@ -398,6 +514,11 @@ async function getAvailableFiles(context, req, companyDomain) {
                     from: fromDate.toISOString().split('T')[0],
                     to: toDate.toISOString().split('T')[0],
                     isDefault: isDefault
+                },
+                debug: {
+                    domain: companyDomain,
+                    accNos: accNoList,
+                    timestamp: new Date().toISOString()
                 }
             }
         };
@@ -410,10 +531,12 @@ async function getAvailableFiles(context, req, companyDomain) {
     }
 }
 
-// Other functions (previewFile, downloadFile, verifyAccess, generateCSV) remain the same as in the original...
+// Preview file
 async function previewFile(context, req, companyDomain) {
     try {
         const accno = req.query.accno;
+        
+        context.log(`🔍 Preview request - Domain: ${companyDomain}, AccNo: ${accno}`);
         
         if (!accno) {
             context.res = {
@@ -424,6 +547,7 @@ async function previewFile(context, req, companyDomain) {
             return;
         }
         
+        // Verify access
         const accessCheck = await verifyAccess(companyDomain, accno);
         if (!accessCheck.hasAccess) {
             context.res = {
@@ -437,14 +561,17 @@ async function previewFile(context, req, companyDomain) {
         const request = new sql.Request();
         request.timeout = 30000;
         
-        const { fromDate, toDate } = getDateParameters(req);
+        const { fromDate, toDate, isDefault } = getDateParameters(req);
         
         request.input('Accno', sql.NVarChar(50), String(accno));
         request.input('FromDate', sql.Date, fromDate);
         request.input('ToDate', sql.Date, toDate);
         
+        context.log('📞 Calling stored procedure for preview...');
+        
         const result = await request.execute('api_ExportInvoiceLines');
         
+        // Take first 20 rows for preview
         const preview = result.recordset.slice(0, 20);
         const columns = preview.length > 0 ? Object.keys(preview[0]) : [];
         
@@ -456,9 +583,16 @@ async function previewFile(context, req, companyDomain) {
                 columns: columns,
                 totalPreviewRows: preview.length,
                 totalRecords: result.recordset.length,
-                accno
+                accno,
+                dateRange: {
+                    from: fromDate.toISOString().split('T')[0],
+                    to: toDate.toISOString().split('T')[0],
+                    isDefault: isDefault
+                }
             }
         };
+        
+        context.log(`✅ Preview: ${preview.length} rows (of ${result.recordset.length} total) for ${accno}`);
         
     } catch (error) {
         context.log.error('💥 previewFile error:', error);
@@ -466,9 +600,12 @@ async function previewFile(context, req, companyDomain) {
     }
 }
 
+// Download file
 async function downloadFile(context, req, companyDomain) {
     try {
         const accno = req.query.accno;
+        
+        context.log(`📥 Download request - Domain: ${companyDomain}, AccNo: ${accno}`);
         
         if (!accno) {
             context.res = {
@@ -498,8 +635,11 @@ async function downloadFile(context, req, companyDomain) {
         request.input('FromDate', sql.Date, fromDate);
         request.input('ToDate', sql.Date, toDate);
         
+        context.log('📞 Calling stored procedure for download...');
+        
         const result = await request.execute('api_ExportInvoiceLines');
         
+        // Generate CSV
         const csvContent = generateCSV(result.recordset);
         const fileName = `${accno}_InvoiceData_${fromDate.toISOString().split('T')[0]}_${toDate.toISOString().split('T')[0]}.csv`;
         
@@ -513,12 +653,15 @@ async function downloadFile(context, req, companyDomain) {
             body: csvContent
         };
         
+        context.log(`✅ Download: ${result.recordset.length} invoice records for ${accno}`);
+        
     } catch (error) {
         context.log.error('💥 downloadFile error:', error);
         throw error;
     }
 }
 
+// Verify access
 async function verifyAccess(companyDomain, accno) {
     try {
         const result = await sql.query`
@@ -547,6 +690,7 @@ async function verifyAccess(companyDomain, accno) {
     }
 }
 
+// Generate CSV
 function generateCSV(data) {
     if (!data || data.length === 0) return '';
     

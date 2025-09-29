@@ -380,28 +380,30 @@ function generateDetailTable(cardType, data) {
 
     switch (cardType) {
         case 'airlines':
-            headerRow = '<tr><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map(item => {
+            headerRow = '<tr><th>Rank</th><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr>';
+            bodyRows = data.details.map((item, index) => {
                 // Apply name mapping for display
                 const airlineName = getAirlineNameFallback(item.code) || item.name || item.code;
                 return `<tr>
+                    <td><strong>#${index + 1}</strong></td>
                     <td><strong>${item.code}</strong></td>
                     <td>${airlineName}</td>
-                    <td>${item.count}</td>
+                    <td>${item.count.toLocaleString()}</td>
                     <td>${item.percentage}%</td>
                 </tr>`;
             }).join('');
             break;
             
         case 'destinations':
-            headerRow = '<tr><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map(item => {
+            headerRow = '<tr><th>Rank</th><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr>';
+            bodyRows = data.details.map((item, index) => {
                 // Apply name mapping for display
                 const destName = getDestinationNameFallback(item.code) || item.name || item.code;
                 return `<tr>
+                    <td><strong>#${index + 1}</strong></td>
                     <td><strong>${item.code}</strong></td>
                     <td>${destName}</td>
-                    <td>${item.count}</td>
+                    <td>${item.count.toLocaleString()}</td>
                     <td>${item.percentage}%</td>
                 </tr>`;
             }).join('');
@@ -428,13 +430,27 @@ function generateDetailTable(cardType, data) {
     `;
 }
 
-// ENHANCED: Load dynamic statistics with better error handling
+// ENHANCED: Load dynamic statistics with better error handling and caching
+let statsCache = null;
+let statsCacheTime = null;
+const STATS_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
+
 async function loadDynamicStats() {
     console.log('🚀 Loading dynamic statistics...');
     
     try {
         const fromDate = document.getElementById('fromDate')?.value;
         const toDate = document.getElementById('toDate')?.value;
+        
+        // Check cache first
+        const cacheKey = `${fromDate}-${toDate}`;
+        if (statsCache && statsCacheTime && 
+            (Date.now() - statsCacheTime < STATS_CACHE_DURATION) && 
+            statsCache.cacheKey === cacheKey) {
+            console.log('✅ Using cached statistics data');
+            updateStatsCards(statsCache.data);
+            return;
+        }
         
         // Show loading state for all cards
         const cards = document.querySelectorAll('.travel-stats .stat-card');
@@ -465,30 +481,34 @@ async function loadDynamicStats() {
             console.log('📈 Statistics result:', result);
             
             if (result && result.data) {
+                // Cache the result
+                statsCache = {
+                    data: result.data,
+                    cacheKey: cacheKey
+                };
+                statsCacheTime = Date.now();
+                
                 updateStatsCards(result.data);
-                // Show success message if real data
-                if (!result.error) {
-                    console.log('✅ Real data loaded from Azure Function');
-                }
+                console.log('✅ Real data loaded from Azure Function (cached for 2min)');
             } else {
-                // Use mock data for demo
-                console.log('📊 Using mock statistics data');
-                updateStatsCards(generateMockStatsData());
+                throw new Error('Invalid response format');
             }
         } else {
-            console.error(`❌ Stats API failed: ${response.status}`);
-            const errorText = await response.text();
-            console.error('Stats API error:', errorText);
-            
-            // Use mock data for demo if API fails
-            console.log('📊 Using mock statistics data (API failed)');
-            updateStatsCards(generateMockStatsData());
+            throw new Error(`Stats API failed: ${response.status}`);
         }
 
     } catch (error) {
         console.error('❌ Error loading dynamic statistics:', error);
-        // Show error state or use mock data
-        updateStatsCards(generateMockStatsData());
+        // Show error in cards
+        const cards = document.querySelectorAll('.travel-stats .stat-card');
+        cards.forEach(card => {
+            card.classList.remove('loading');
+            card.classList.add('error');
+            const statNumber = card.querySelector('.stat-number');
+            const statLabel = card.querySelector('.stat-label');
+            if (statNumber) statNumber.textContent = 'Error';
+            if (statLabel) statLabel.textContent = 'Failed to load statistics';
+        });
     }
 }
 
@@ -644,15 +664,31 @@ function updateCard(card, data) {
         const statLabel = card.querySelector('.stat-label');
         
         if (statNumber && data.value) {
-            statNumber.textContent = data.value;
+            // Extract the name from the label (first line before \n)
+            let displayValue = data.value;
+            
+            if (data.label && data.label.includes('\n')) {
+                // Get the full name from label (before the newline)
+                const parts = data.label.split('\n');
+                displayValue = parts[0]; // This will be "Widerøe" or "Bodø Lufthavn"
+                
+                // Update the label to show code and count
+                if (statLabel) {
+                    statLabel.textContent = `${data.value} - ${parts[1]}`; // "WF - 93836 flights"
+                }
+            } else {
+                // Fallback to original behavior
+                if (statLabel && data.label) {
+                    statLabel.textContent = data.label;
+                }
+            }
+            
+            statNumber.textContent = displayValue;
+            
             // Add small text class if text is long
-            if (data.value.length > 8) {
+            if (displayValue.length > 8) {
                 statNumber.classList.add('small-text');
             }
-        }
-        
-        if (statLabel && data.label) {
-            statLabel.textContent = data.label;
         }
         
     } catch (error) {

@@ -442,41 +442,37 @@ router.get('/api/stats', async (req, res) => {
                     mostUsedAirline: {
                         value: functionResult.stats?.mostUsedAirlines?.primary?.code || 'N/A',
                         label: functionResult.stats?.mostUsedAirlines?.primary ? 
-                            `${getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count} flights` : 
+                            `${getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count.toLocaleString()} flights` : 
                             'No data available',
-                        details: functionResult.stats?.mostUsedAirlines?.primary ? [
-                            {
-                                ...functionResult.stats.mostUsedAirlines.primary,
-                                name: getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name
-                            },
-                            ...(functionResult.stats.mostUsedAirlines.secondary || []).map(airline => ({
-                                ...airline,
-                                name: getAirlineNameFallback(airline.code) || airline.name
-                            }))
-                        ].map((airline, index) => ({
+                        details: (functionResult.stats?.mostUsedAirlines?.all || []).map(airline => ({
                             code: airline.code,
-                            name: airline.name,
+                            name: getAirlineNameFallback(airline.code) || airline.name,
                             count: airline.count,
-                            percentage: Math.round((airline.count / functionResult.totalFlights) * 100)
-                        })) : []
+                            percentage: airline.percentage
+                        }))
                     },
                     mostVisitedDestination: {
                         value: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
                         label: functionResult.stats?.mostVisitedDestination ? 
-                            `${getDestinationNameFallback(functionResult.stats.mostVisitedDestination.destination.code) || functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count} visits` : 
+                            `${getDestinationNameFallback(functionResult.stats.mostVisitedDestination.destination.code) || functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count.toLocaleString()} visits` : 
                             'No data available',
-                        details: [{
-                            code: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
-                            name: getDestinationNameFallback(functionResult.stats?.mostVisitedDestination?.destination?.code) || functionResult.stats?.mostVisitedDestination?.destination?.name || 'No data',
-                            count: functionResult.stats?.mostVisitedDestination?.count || 0,
-                            percentage: functionResult.totalFlights > 0 ? 
-                                Math.round((functionResult.stats?.mostVisitedDestination?.count || 0) / functionResult.totalFlights * 100) : 0
-                        }]
+                        details: (functionResult.stats?.mostVisitedDestination?.all || []).map(dest => ({
+                            code: dest.code,
+                            name: getDestinationNameFallback(dest.code) || dest.name,
+                            count: dest.count,
+                            percentage: dest.percentage
+                        }))
                     },
                     uniqueRoutes: {
                         value: functionResult.stats?.flightMetrics?.value?.toString() || '0',
                         label: functionResult.stats?.flightMetrics?.subtitle || 'No routes found',
-                        details: [] // Would need route details from function
+                        details: (functionResult.stats?.flightMetrics?.topRoutes || []).map(route => ({
+                            route: route.route,
+                            from: route.from,
+                            to: route.to,
+                            frequency: route.frequency,
+                            lastUsed: route.lastUsed
+                        }))
                     }
                 },
                 totalFlights: functionResult.totalFlights || 0,
