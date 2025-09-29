@@ -953,8 +953,20 @@ async function previewFile(fileId, fileName, buttonElement) {
 
         if (response.ok) {
             const result = await response.json();
-            showPreviewModal(fileName, result.data || result);
+            console.log('Preview data received:', result);
+            
+            // Extract the actual data
+            const previewData = result.data || result.preview || result;
+            
+            if (!previewData || (Array.isArray(previewData) && previewData.length === 0)) {
+                alert('No preview data available for this file.');
+                return;
+            }
+            
+            showPreviewModal(fileName, previewData, fileId);
         } else {
+            const errorText = await response.text();
+            console.error('Preview failed:', response.status, errorText);
             throw new Error(`Preview failed: ${response.status}`);
         }
         
@@ -966,7 +978,7 @@ async function previewFile(fileId, fileName, buttonElement) {
     }
 }
 
-// FIXED: Download file function with proper button handling
+// FIXED: Download file function with proper CSV handling
 async function downloadFile(fileId, fileName, buttonElement) {
     console.log(`⬇️ Downloading file: ${fileName} (${fileId})`);
     
@@ -985,36 +997,81 @@ async function downloadFile(fileId, fileName, buttonElement) {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            if (data.downloadUrl) {
-                // Open download URL in new window/tab
-                window.open(data.downloadUrl, '_blank');
-            } else {
-                // Handle direct blob download
+            // Check content type to determine how to handle the response
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('text/csv')) {
+                // Response is direct CSV file
+                console.log('Handling CSV response...');
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = fileName;
+                
+                // Get filename from Content-Disposition header or use default
+                const disposition = response.headers.get('content-disposition');
+                let downloadFileName = fileName;
+                if (disposition && disposition.includes('filename=')) {
+                    const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+                    if (filenameMatch) {
+                        downloadFileName = filenameMatch[1];
+                    }
+                }
+                
+                a.download = downloadFileName;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
+                console.log('Downloaded file:', downloadFileName);
+            } else if (contentType && contentType.includes('application/json')) {
+                // Response is JSON with download URL (fallback)
+                const data = await response.json();
+                console.log('Download response:', data);
+                
+                if (data.downloadUrl) {
+                    console.log('Opening download URL:', data.downloadUrl);
+                    // Handle data URI
+                    if (data.downloadUrl.startsWith('data:')) {
+                        const a = document.createElement('a');
+                        a.href = data.downloadUrl;
+                        a.download = data.fileName || fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    } else {
+                        window.open(data.downloadUrl, '_blank');
+                    }
+                } else if (data.url) {
+                    console.log('Opening URL:', data.url);
+                    window.open(data.url, '_blank');
+                } else {
+                    throw new Error('No download URL provided in response');
+                }
+            } else {
+                throw new Error(`Unexpected content type: ${contentType}`);
             }
         } else {
+            const errorText = await response.text();
+            console.error('Download failed:', response.status, errorText);
             throw new Error(`Download failed: ${response.status}`);
         }
         
     } catch (error) {
         console.error('Error downloading file:', error);
-        alert('Failed to download file. Please try again.');
+        alert(`Failed to download file: ${error.message}. Please try again.`);
     } finally {
         btn.classList.remove('loading');
     }
 }
 
-// FIXED: Show preview modal with proper event listeners
-function showPreviewModal(fileName, data) {
+// FIXED: Show preview modal with proper event listeners and data rendering
+function showPreviewModal(fileName, data, fileId) {
+    console.log('Rendering preview modal with data:', data);
+    
+    // Generate the preview table HTML
+    const previewContent = generatePreviewTable(data);
+    
     // Implementation for showing preview modal
     const modal = document.createElement('div');
     modal.className = 'preview-modal show';
@@ -1026,10 +1083,10 @@ function showPreviewModal(fileName, data) {
             </div>
             <div class="modal-body">
                 <div class="preview-info">
-                    File: ${escapeHtml(fileName)} | Showing first 100 rows
+                    File: <strong>${escapeHtml(fileName)}</strong> (${escapeHtml(fileId)}) | Showing first 100 rows
                 </div>
                 <div class="preview-table-container">
-                    <p>Preview data would be displayed here...</p>
+                    ${previewContent}
                 </div>
             </div>
             <div class="modal-footer">
@@ -1052,6 +1109,72 @@ function showPreviewModal(fileName, data) {
             modal.remove();
         }
     });
+}
+
+// Generate preview table from data
+function generatePreviewTable(data) {
+    try {
+        // Handle different data formats
+        if (!data) {
+            return '<p style="text-align: center; padding: 2rem; color: #666;">No data available</p>';
+        }
+        
+        // If data is an array of objects (typical CSV/JSON format)
+        if (Array.isArray(data) && data.length > 0) {
+            // Get headers from first row
+            const headers = Object.keys(data[0]);
+            
+            // Limit to first 100 rows
+            const rowsToShow = data.slice(0, 100);
+            
+            let tableHtml = '<table class="preview-table"><thead><tr>';
+            
+            // Add headers
+            headers.forEach(header => {
+                tableHtml += `<th>${escapeHtml(header)}</th>`;
+            });
+            
+            tableHtml += '</tr></thead><tbody>';
+            
+            // Add rows
+            rowsToShow.forEach(row => {
+                tableHtml += '<tr>';
+                headers.forEach(header => {
+                    const value = row[header];
+                    tableHtml += `<td>${escapeHtml(String(value !== null && value !== undefined ? value : ''))}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            
+            tableHtml += '</tbody></table>';
+            
+            if (data.length > 100) {
+                tableHtml += `<p style="text-align: center; padding: 1rem; color: #666; font-size: 0.9em;">Showing 100 of ${data.length} rows</p>`;
+            }
+            
+            return tableHtml;
+        }
+        
+        // If data is an object, show as key-value pairs
+        if (typeof data === 'object') {
+            let tableHtml = '<table class="preview-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>';
+            
+            Object.keys(data).forEach(key => {
+                const value = data[key];
+                tableHtml += `<tr><td><strong>${escapeHtml(key)}</strong></td><td>${escapeHtml(String(value))}</td></tr>`;
+            });
+            
+            tableHtml += '</tbody></table>';
+            return tableHtml;
+        }
+        
+        // Fallback for other data types
+        return `<pre style="padding: 1rem; background: #f5f5f5; border-radius: 4px; overflow: auto;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+        
+    } catch (error) {
+        console.error('Error generating preview table:', error);
+        return '<p style="text-align: center; padding: 2rem; color: #d32f2f;">Error rendering preview data</p>';
+    }
 }
 
 async function logout() {

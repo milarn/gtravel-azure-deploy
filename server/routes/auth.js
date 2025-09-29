@@ -572,7 +572,7 @@ router.get('/api/preview/:fileId', async (req, res) => {
     }
 });
 
-// Download file - proxy to Azure Function
+// Download file - proxy to Azure Function with proper CSV handling
 router.get('/api/download/:fileId', async (req, res) => {
     try {
         if (!req.session.user) {
@@ -588,42 +588,62 @@ router.get('/api/download/:fileId', async (req, res) => {
         // Extract accno from fileId
         const accno = fileId.split('-')[0];
         
-        const params = {
+        // Build Azure Function URL directly for CSV download
+        const functionUrl = process.env.AZURE_FUNCTION_BASE_URL;
+        if (!functionUrl) {
+            throw new Error('Azure Function URL not configured');
+        }
+        
+        const searchParams = new URLSearchParams({
+            action: 'downloadFile',
+            domain: user.mappedDomain,
             accno: accno,
             userId: user.id
-        };
+        });
         
         if (fromDate && toDate) {
-            params.fromDate = fromDate;
-            params.toDate = toDate;
+            searchParams.append('fromDate', fromDate);
+            searchParams.append('toDate', toDate);
         }
         
-        try {
-            const functionResult = await callAzureFunction(
-                'downloadFile',
-                user.mappedDomain,
-                params,
-                req.session.tokens?.accessToken
-            );
-            
-            // For download, we should get a direct response or URL
-            res.json({ 
-                downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent(functionResult)}`,
-                fileName: `${accno}_data.csv`,
-                message: 'Download ready'
-            });
-            
-        } catch (functionError) {
-            console.error('❌ Download function call failed:', functionError.message);
-            res.status(500).json({
-                error: 'Download temporarily unavailable',
-                message: 'Please try again or contact support'
-            });
+        console.log(`🔗 Calling Azure Function for CSV download...`);
+        console.log(`📋 Parameters: accno=${accno}, domain=${user.mappedDomain}`);
+        
+        const response = await fetch(`${functionUrl}&${searchParams.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Azure Function error (${response.status}):`, errorText);
+            throw new Error(`Function call failed: ${response.status}`);
         }
+        
+        // Get the CSV content as text
+        const csvContent = await response.text();
+        console.log(`✅ Received CSV content (${csvContent.length} bytes)`);
+        
+        // Set proper headers for CSV download
+        const fileName = `${accno}_InvoiceData_${new Date().toISOString().split('T')[0]}.csv`;
+        
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        
+        // Send the CSV content directly
+        res.send(csvContent);
+        
+        console.log(`✅ CSV file sent: ${fileName}`);
         
     } catch (error) {
         console.error('❌ Download API error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ 
+            error: 'Download failed',
+            message: error.message
+        });
     }
 });
 
