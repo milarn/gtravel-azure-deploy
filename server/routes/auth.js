@@ -359,18 +359,29 @@ router.get('/api/files', async (req, res) => {
             const files = functionResult.files || [];
             
             // Ensure each file has the proper structure expected by frontend
-            const formattedFiles = files.map(file => ({
-                id: file.id || file.fileId || `${Date.now()}-${Math.random()}`,
-                fileName: file.fileName || file.name || 'Unknown File',
-                fileId: file.fileId || file.id || `${Date.now()}-${Math.random()}`,
-                category: file.category || 'Invoice Data',
-                size: file.size || 'Unknown',
-                lastUpdated: file.lastUpdated || new Date().toISOString(),
-                accno: file.accno || 'N/A',
-                recordCount: file.recordCount || 0,
-                owner: file.owner || 'Company',
-                status: file.status || 'available'
-            }));
+            const formattedFiles = files.map(file => {
+                // Calculate proper file size
+                let fileSize = 'Unknown';
+                if (file.recordCount && !isNaN(file.recordCount)) {
+                    const sizeKB = Math.round(file.recordCount * 0.8);
+                    fileSize = `${sizeKB} KB`;
+                } else if (file.size && file.size !== 'Unknown') {
+                    fileSize = file.size;
+                }
+                
+                return {
+                    id: file.id || file.fileId || `${Date.now()}-${Math.random()}`,
+                    fileName: file.fileName || file.name || 'Unknown File',
+                    fileId: file.fileId || file.id || `${Date.now()}-${Math.random()}`,
+                    category: file.category || 'Invoice Data',
+                    size: fileSize,
+                    lastUpdated: file.lastUpdated || new Date().toISOString(),
+                    accno: file.accno || 'N/A',
+                    recordCount: file.recordCount || 0,
+                    owner: file.owner || 'Company',
+                    status: file.status || 'available'
+                };
+            });
             
             res.json({
                 files: formattedFiles,
@@ -442,11 +453,11 @@ router.get('/api/stats', async (req, res) => {
                     mostUsedAirline: {
                         value: functionResult.stats?.mostUsedAirlines?.primary?.code || 'N/A',
                         label: functionResult.stats?.mostUsedAirlines?.primary ? 
-                            `${getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code) || functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count.toLocaleString()} flights` : 
+                            `${functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count.toLocaleString()} flights` : 
                             'No data available',
                         details: (functionResult.stats?.mostUsedAirlines?.all || []).map(airline => ({
                             code: airline.code,
-                            name: getAirlineNameFallback(airline.code) || airline.name,
+                            name: airline.name,
                             count: airline.count,
                             percentage: airline.percentage
                         }))
@@ -454,11 +465,11 @@ router.get('/api/stats', async (req, res) => {
                     mostVisitedDestination: {
                         value: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
                         label: functionResult.stats?.mostVisitedDestination ? 
-                            `${getDestinationNameFallback(functionResult.stats.mostVisitedDestination.destination.code) || functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count.toLocaleString()} visits` : 
+                            `${functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count.toLocaleString()} visits` : 
                             'No data available',
                         details: (functionResult.stats?.mostVisitedDestination?.all || []).map(dest => ({
                             code: dest.code,
-                            name: getDestinationNameFallback(dest.code) || dest.name,
+                            name: dest.name,
                             count: dest.count,
                             percentage: dest.percentage
                         }))

@@ -209,7 +209,7 @@ function getCardType(index) {
     return types[index] || 'unknown';
 }
 
-// ENHANCED: Export card data functionality with airline name mapping
+// ENHANCED: Export card data functionality - USE DATABASE NAMES
 async function downloadCardData(cardType) {
     try {
         const data = travelStatsData[cardType];
@@ -227,9 +227,8 @@ async function downloadCardData(cardType) {
                 csvContent = 'Airline Code,Airline Name,Flight Count,Usage Percentage\n';
                 if (data.details && Array.isArray(data.details)) {
                     data.details.forEach(item => {
-                        // Apply airline name mapping if needed
-                        const airlineName = getAirlineNameFallback(item.code) || item.name || item.code;
-                        csvContent += `"${item.code}","${airlineName}","${item.count}","${item.percentage}%"\n`;
+                        // Use database name directly - NO fallback mapping
+                        csvContent += `"${item.code}","${item.name || item.code}","${item.count}","${item.percentage}%"\n`;
                     });
                 }
                 filename = 'travel_airlines_report.csv';
@@ -239,9 +238,8 @@ async function downloadCardData(cardType) {
                 csvContent = 'Destination Code,Destination Name,Visit Count,Usage Percentage\n';
                 if (data.details && Array.isArray(data.details)) {
                     data.details.forEach(item => {
-                        // Apply destination name mapping if needed
-                        const destName = getDestinationNameFallback(item.code) || item.name || item.code;
-                        csvContent += `"${item.code}","${destName}","${item.count}","${item.percentage}%"\n`;
+                        // Use database name directly - NO fallback mapping
+                        csvContent += `"${item.code}","${item.name || item.code}","${item.count}","${item.percentage}%"\n`;
                     });
                 }
                 filename = 'travel_destinations_report.csv';
@@ -288,8 +286,18 @@ async function downloadCardData(cardType) {
 async function viewCardDetails(cardType) {
     try {
         const data = travelStatsData[cardType];
+        
+        console.log(`Viewing details for ${cardType}:`, data);
+        
         if (!data) {
             alert('No data available to view');
+            return;
+        }
+        
+        // Check if details array exists and has data
+        if (!data.details || !Array.isArray(data.details) || data.details.length === 0) {
+            console.warn(`No details available for ${cardType}. Data structure:`, data);
+            alert(`No detailed data available for ${cardType}. The Azure Function may need to be updated with the latest code that returns all statistics.`);
             return;
         }
 
@@ -305,7 +313,8 @@ async function viewCardDetails(cardType) {
                 <div class="modal-body">
                     <div class="preview-info">
                         <strong>Summary:</strong> ${data.value || 'N/A'} | 
-                        <strong>Analysis Period:</strong> ${getCurrentDateRange()}
+                        <strong>Analysis Period:</strong> ${getCurrentDateRange()} | 
+                        <strong>Total Items:</strong> ${data.details.length}
                     </div>
                     <div class="preview-table-container">
                         ${generateDetailTable(cardType, data)}
@@ -382,12 +391,11 @@ function generateDetailTable(cardType, data) {
         case 'airlines':
             headerRow = '<tr><th>Rank</th><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr>';
             bodyRows = data.details.map((item, index) => {
-                // Apply name mapping for display
-                const airlineName = getAirlineNameFallback(item.code) || item.name || item.code;
+                // Use database name directly - NO fallback mapping
                 return `<tr>
                     <td><strong>#${index + 1}</strong></td>
                     <td><strong>${item.code}</strong></td>
-                    <td>${airlineName}</td>
+                    <td>${item.name || item.code}</td>
                     <td>${item.count.toLocaleString()}</td>
                     <td>${item.percentage}%</td>
                 </tr>`;
@@ -397,12 +405,11 @@ function generateDetailTable(cardType, data) {
         case 'destinations':
             headerRow = '<tr><th>Rank</th><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr>';
             bodyRows = data.details.map((item, index) => {
-                // Apply name mapping for display
-                const destName = getDestinationNameFallback(item.code) || item.name || item.code;
+                // Use database name directly - NO fallback mapping
                 return `<tr>
                     <td><strong>#${index + 1}</strong></td>
                     <td><strong>${item.code}</strong></td>
-                    <td>${destName}</td>
+                    <td>${item.name || item.code}</td>
                     <td>${item.count.toLocaleString()}</td>
                     <td>${item.percentage}%</td>
                 </tr>`;
@@ -593,36 +600,11 @@ function getDestinationNameFallback(code) {
     return airportMap[code?.toUpperCase()] || code;
 }
 
-// ENHANCED: Update stats cards with name mapping
+// ENHANCED: Update stats cards - USE DATABASE NAMES DIRECTLY
 function updateStatsCards(data) {
     try {
-        // Apply name mapping to airline data
-        if (data.mostUsedAirline && data.mostUsedAirline.details) {
-            data.mostUsedAirline.details = data.mostUsedAirline.details.map(airline => ({
-                ...airline,
-                name: getAirlineNameFallback(airline.code) || airline.name || airline.code
-            }));
-            
-            // Update the primary airline display
-            if (data.mostUsedAirline.details[0]) {
-                const primary = data.mostUsedAirline.details[0];
-                data.mostUsedAirline.label = `${primary.name}\n${primary.count} flights`;
-            }
-        }
-        
-        // Apply name mapping to destination data
-        if (data.mostVisitedDestination && data.mostVisitedDestination.details) {
-            data.mostVisitedDestination.details = data.mostVisitedDestination.details.map(dest => ({
-                ...dest,
-                name: getDestinationNameFallback(dest.code) || dest.name || dest.code
-            }));
-            
-            // Update the primary destination display
-            if (data.mostVisitedDestination.details[0]) {
-                const primary = data.mostVisitedDestination.details[0];
-                data.mostVisitedDestination.label = `${primary.name}\n${primary.count} visits`;
-            }
-        }
+        // NO name mapping - use database names directly
+        // The backend already provides the correct names from the database
         
         // Store data for export functionality
         travelStatsData = {
