@@ -132,7 +132,7 @@ function setupEventListeners() {
     }
 }
 
-// ENHANCED: Setup card export functionality
+// ENHANCED: Setup card export functionality with proper event listeners
 function setupCardExports() {
     // Add export buttons to each card
     const cards = document.querySelectorAll('.travel-stats .stat-card');
@@ -146,10 +146,14 @@ function setupCardExports() {
             card.appendChild(actionsContainer);
         }
 
-        // Export button
+        // Export button - FIXED: Use proper event listener
         const exportBtn = document.createElement('button');
         exportBtn.className = 'card-action-btn';
-        exportBtn.onclick = () => downloadCardData(getCardType(index));
+        exportBtn.setAttribute('data-card-type', getCardType(index));
+        exportBtn.setAttribute('data-action', 'export');
+        exportBtn.addEventListener('click', function() {
+            downloadCardData(this.getAttribute('data-card-type'));
+        });
         exportBtn.innerHTML = `
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -158,10 +162,14 @@ function setupCardExports() {
             Export
         `;
 
-        // Details button
+        // Details button - FIXED: Use proper event listener
         const detailsBtn = document.createElement('button');
         detailsBtn.className = 'card-action-btn';
-        detailsBtn.onclick = () => viewCardDetails(getCardType(index));
+        detailsBtn.setAttribute('data-card-type', getCardType(index));
+        detailsBtn.setAttribute('data-action', 'details');
+        detailsBtn.addEventListener('click', function() {
+            viewCardDetails(this.getAttribute('data-card-type'));
+        });
         
         if (index === 0) {
             detailsBtn.innerHTML = `
@@ -276,7 +284,7 @@ async function downloadCardData(cardType) {
     }
 }
 
-// ENHANCED: View card details with visualization
+// ENHANCED: View card details with visualization - FIXED: Use proper event listeners
 async function viewCardDetails(cardType) {
     try {
         const data = travelStatsData[cardType];
@@ -292,7 +300,7 @@ async function viewCardDetails(cardType) {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Detailed View: ${getCardTitle(cardType)}</h3>
-                    <button class="close-modal" onclick="this.closest('.preview-modal').remove()">×</button>
+                    <button class="close-modal" data-action="close">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="preview-info">
@@ -304,18 +312,31 @@ async function viewCardDetails(cardType) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="action-btn download" onclick="downloadCardData('${cardType}')">
+                    <button class="action-btn download" data-action="export" data-card-type="${cardType}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         Export CSV
                     </button>
-                    <button class="action-btn preview" onclick="this.closest('.preview-modal').remove()">Close</button>
+                    <button class="action-btn preview" data-action="close">Close</button>
                 </div>
             </div>
         `;
         
         document.body.appendChild(modal);
+        
+        // FIXED: Add event listeners to modal buttons instead of inline onclick
+        const closeButtons = modal.querySelectorAll('[data-action="close"]');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => modal.remove());
+        });
+        
+        const exportButton = modal.querySelector('[data-action="export"]');
+        if (exportButton) {
+            exportButton.addEventListener('click', function() {
+                downloadCardData(this.getAttribute('data-card-type'));
+            });
+        }
         
         // Close on background click
         modal.addEventListener('click', (e) => {
@@ -826,6 +847,7 @@ async function loadFiles() {
     }
 }
 
+// FIXED: Display files with proper event listeners instead of inline onclick
 function displayFiles(files) {
     try {
         const tableBody = document.getElementById('fileTableBody');
@@ -843,14 +865,14 @@ function displayFiles(files) {
                 <td class="file-size">${formatFileSize(file.size)}</td>
                 <td class="file-date">${formatDate(file.lastUpdated)}</td>
                 <td class="file-actions">
-                    <button class="action-btn preview" onclick="previewFile('${escapeHtml(file.fileId)}', '${escapeHtml(file.fileName)}')">
+                    <button class="action-btn preview" data-action="preview" data-file-id="${escapeHtml(file.fileId)}" data-file-name="${escapeHtml(file.fileName)}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
                         <span class="btn-text">Preview</span>
                     </button>
-                    <button class="action-btn download" onclick="downloadFile('${escapeHtml(file.fileId)}', '${escapeHtml(file.fileName)}')">
+                    <button class="action-btn download" data-action="download" data-file-id="${escapeHtml(file.fileId)}" data-file-name="${escapeHtml(file.fileName)}">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
@@ -859,6 +881,25 @@ function displayFiles(files) {
                 </td>
             </tr>
         `).join('');
+
+        // FIXED: Add event listeners to all action buttons
+        const previewButtons = tableBody.querySelectorAll('[data-action="preview"]');
+        previewButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileId = this.getAttribute('data-file-id');
+                const fileName = this.getAttribute('data-file-name');
+                previewFile(fileId, fileName, this);
+            });
+        });
+        
+        const downloadButtons = tableBody.querySelectorAll('[data-action="download"]');
+        downloadButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileId = this.getAttribute('data-file-id');
+                const fileName = this.getAttribute('data-file-name');
+                downloadFile(fileId, fileName, this);
+            });
+        });
 
         console.log(`✅ Displayed ${files.length} files`);
         
@@ -892,11 +933,15 @@ function formatDate(dateString) {
     return date.toLocaleDateString('nb-NO') + ' ' + date.toLocaleTimeString('nb-NO', {hour: '2-digit', minute:'2-digit'});
 }
 
-async function previewFile(fileId, fileName) {
+// FIXED: Preview file function with proper button handling
+async function previewFile(fileId, fileName, buttonElement) {
     console.log(`👁️ Previewing file: ${fileName} (${fileId})`);
     
-    const btn = event.target.closest('.action-btn');
-    if (!btn) return;
+    const btn = buttonElement;
+    if (!btn) {
+        console.warn('No button element provided');
+        return;
+    }
 
     try {
         // Add loading state
@@ -921,11 +966,15 @@ async function previewFile(fileId, fileName) {
     }
 }
 
-async function downloadFile(fileId, fileName) {
+// FIXED: Download file function with proper button handling
+async function downloadFile(fileId, fileName, buttonElement) {
     console.log(`⬇️ Downloading file: ${fileName} (${fileId})`);
     
-    const btn = event.target.closest('.action-btn');
-    if (!btn) return;
+    const btn = buttonElement;
+    if (!btn) {
+        console.warn('No button element provided');
+        return;
+    }
 
     try {
         // Add loading state
@@ -964,6 +1013,7 @@ async function downloadFile(fileId, fileName) {
     }
 }
 
+// FIXED: Show preview modal with proper event listeners
 function showPreviewModal(fileName, data) {
     // Implementation for showing preview modal
     const modal = document.createElement('div');
@@ -971,24 +1021,30 @@ function showPreviewModal(fileName, data) {
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Preview: ${fileName}</h3>
-                <button class="close-modal" onclick="this.closest('.preview-modal').remove()">×</button>
+                <h3>Preview: ${escapeHtml(fileName)}</h3>
+                <button class="close-modal" data-action="close">×</button>
             </div>
             <div class="modal-body">
                 <div class="preview-info">
-                    File: ${fileName} | Showing first 100 rows
+                    File: ${escapeHtml(fileName)} | Showing first 100 rows
                 </div>
                 <div class="preview-table-container">
                     <p>Preview data would be displayed here...</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="action-btn preview" onclick="this.closest('.preview-modal').remove()">Close</button>
+                <button class="action-btn preview" data-action="close">Close</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
+    
+    // FIXED: Add event listeners to close buttons
+    const closeButtons = modal.querySelectorAll('[data-action="close"]');
+    closeButtons.forEach(btn => {
+        btn.addEventListener('click', () => modal.remove());
+    });
     
     // Close on background click
     modal.addEventListener('click', (e) => {
@@ -999,7 +1055,7 @@ function showPreviewModal(fileName, data) {
 }
 
 async function logout() {
-    console.log('🚺 Logging out...');
+    console.log('🚪 Logging out...');
     try {
         await fetch('/auth/logout', { 
             method: 'POST', 
