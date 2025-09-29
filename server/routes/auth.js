@@ -453,11 +453,12 @@ router.get('/api/stats', async (req, res) => {
                     mostUsedAirline: {
                         value: functionResult.stats?.mostUsedAirlines?.primary?.code || 'N/A',
                         label: functionResult.stats?.mostUsedAirlines?.primary ? 
-                            `${functionResult.stats.mostUsedAirlines.primary.name}\n${functionResult.stats.mostUsedAirlines.primary.count.toLocaleString()} flights` : 
+                            `${functionResult.stats.mostUsedAirlines.primary.name && functionResult.stats.mostUsedAirlines.primary.name !== functionResult.stats.mostUsedAirlines.primary.code ? functionResult.stats.mostUsedAirlines.primary.name : getAirlineNameFallback(functionResult.stats.mostUsedAirlines.primary.code)}\n${functionResult.stats.mostUsedAirlines.primary.count.toLocaleString()} flights` : 
                             'No data available',
                         details: (functionResult.stats?.mostUsedAirlines?.all || []).map(airline => ({
                             code: airline.code,
-                            name: airline.name,
+                            // Use database name if available and different from code, otherwise use fallback
+                            name: airline.name && airline.name !== airline.code ? airline.name : getAirlineNameFallback(airline.code),
                             count: airline.count,
                             percentage: airline.percentage
                         }))
@@ -465,11 +466,12 @@ router.get('/api/stats', async (req, res) => {
                     mostVisitedDestination: {
                         value: functionResult.stats?.mostVisitedDestination?.destination?.code || 'N/A',
                         label: functionResult.stats?.mostVisitedDestination ? 
-                            `${functionResult.stats.mostVisitedDestination.destination.name}\n${functionResult.stats.mostVisitedDestination.count.toLocaleString()} visits` : 
+                            `${functionResult.stats.mostVisitedDestination.destination.name && functionResult.stats.mostVisitedDestination.destination.name !== functionResult.stats.mostVisitedDestination.destination.code ? functionResult.stats.mostVisitedDestination.destination.name : getDestinationNameFallback(functionResult.stats.mostVisitedDestination.destination.code)}\n${functionResult.stats.mostVisitedDestination.count.toLocaleString()} visits` : 
                             'No data available',
                         details: (functionResult.stats?.mostVisitedDestination?.all || []).map(dest => ({
                             code: dest.code,
-                            name: dest.name,
+                            // Use database name if available and different from code, otherwise use fallback
+                            name: dest.name && dest.name !== dest.code ? dest.name : getDestinationNameFallback(dest.code),
                             count: dest.count,
                             percentage: dest.percentage
                         }))
