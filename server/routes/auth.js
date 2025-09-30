@@ -531,6 +531,53 @@ router.get('/api/stats', async (req, res) => {
     }
 });
 
+// NEW: Get skeleton data instantly for better UX
+router.get('/api/skeleton', async (req, res) => {
+    try {
+        // Return instant skeleton data without checking auth or calling Azure Function
+        // This provides immediate visual feedback while real data loads
+        res.json({
+            loading: true,
+            skeleton: {
+                stats: {
+                    mostUsedAirline: {
+                        value: '...',
+                        label: 'Laster...\nAnalyserer flyselskaper',
+                        details: []
+                    },
+                    mostVisitedDestination: {
+                        value: '...',
+                        label: 'Laster...\nAnalyserer destinasjoner',
+                        details: []
+                    },
+                    uniqueRoutes: {
+                        value: '...',
+                        label: 'Analyserer reiseruter',
+                        details: []
+                    }
+                },
+                files: [
+                    { 
+                        id: 'skeleton-1', 
+                        fileName: 'Laster data...', 
+                        fileId: 'loading',
+                        category: 'Invoice Data', 
+                        size: '...', 
+                        lastUpdated: new Date(), 
+                        recordCount: 0, 
+                        owner: 'Company' 
+                    }
+                ],
+                totalFlights: 0
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Skeleton API error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Preview file - proxy to Azure Function
 router.get('/api/preview/:fileId', async (req, res) => {
     try {

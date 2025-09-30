@@ -24,11 +24,9 @@ async function initDashboard() {
         await checkAuth();
         setupEventListeners();
         
-        // OPTIMIZATION: Load stats and files in parallel
-        await Promise.all([
-            loadDynamicStats(),
-            // Files are already loaded in checkAuth, but we can add another call here if needed
-        ]);
+        // OPTIMIZATION: Show skeleton immediately, then load real data in background
+        loadSkeletonStats(); // Instant placeholder
+        loadDynamicStats();  // Real data loads in background
         
         // Add export functionality to cards
         setupCardExports();
@@ -463,6 +461,30 @@ let filesCache = null;
 let filesCacheTime = null;
 const FILES_CACHE_DURATION = 1 * 60 * 1000; // 1 minute cache for files
 
+// NEW: Load skeleton stats instantly for better UX
+async function loadSkeletonStats() {
+    console.log('⚡ Loading skeleton data instantly...');
+    
+    try {
+        const response = await fetch('/auth/api/skeleton', {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('💀 Skeleton data loaded:', result);
+            
+            if (result && result.skeleton && result.skeleton.stats) {
+                updateStatsCards(result.skeleton.stats);
+                console.log('✅ Skeleton placeholders displayed');
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ Skeleton load failed (non-critical):', error);
+        // Not critical - just show loading state
+    }
+}
+
 async function loadDynamicStats() {
     console.log('🚀 Loading dynamic statistics...');
     
@@ -484,10 +506,6 @@ async function loadDynamicStats() {
         const cards = document.querySelectorAll('.travel-stats .stat-card');
         cards.forEach(card => {
             card.classList.add('loading');
-            const statNumber = card.querySelector('.stat-number');
-            const statLabel = card.querySelector('.stat-label');
-            if (statNumber) statNumber.textContent = 'Loading...';
-            if (statLabel) statLabel.textContent = 'Analyzing data...';
         });
 
         // Call the stats API using session-based auth
@@ -517,7 +535,7 @@ async function loadDynamicStats() {
                 statsCacheTime = Date.now();
                 
                 updateStatsCards(result.data);
-                console.log('✅ Real data loaded from Azure Function (cached for 2min)');
+                console.log(result.cached ? '✅ Cached data from backend' : '✅ Fresh data loaded and cached');
             } else {
                 throw new Error('Invalid response format');
             }
@@ -538,87 +556,6 @@ async function loadDynamicStats() {
             if (statLabel) statLabel.textContent = 'Failed to load statistics';
         });
     }
-}
-
-function generateMockStatsData() {
-    return {
-        mostUsedAirline: {
-            value: 'WF',
-            label: 'Widerøe\n24 flights this year',
-            details: [
-                { code: 'WF', name: 'Widerøe', count: 24, percentage: 45 },
-                { code: 'SK', name: 'SAS', count: 18, percentage: 34 },
-                { code: 'DY', name: 'Norwegian', count: 11, percentage: 21 }
-            ]
-        },
-        mostVisitedDestination: {
-            value: 'OSL',
-            label: 'Oslo Airport\n42 visits this year',
-            details: [
-                { code: 'OSL', name: 'Oslo Airport', count: 42, percentage: 38 },
-                { code: 'BOO', name: 'Bodø Airport', count: 28, percentage: 25 },
-                { code: 'TRD', name: 'Trondheim Airport', count: 20, percentage: 18 },
-                { code: 'SVG', name: 'Stavanger Airport', count: 21, percentage: 19 }
-            ]
-        },
-        uniqueRoutes: {
-            value: '147',
-            label: 'Unique travel routes\nAcross 23 destinations',
-            details: [
-                { route: 'BOO-OSL', from: 'Bodø', to: 'Oslo', frequency: 28, lastUsed: '2024-09-20' },
-                { route: 'OSL-TRD', from: 'Oslo', to: 'Trondheim', frequency: 15, lastUsed: '2024-09-18' },
-                { route: 'BGO-OSL', from: 'Bergen', to: 'Oslo', frequency: 12, lastUsed: '2024-09-15' },
-                { route: 'OSL-SVG', from: 'Oslo', to: 'Stavanger', frequency: 10, lastUsed: '2024-09-12' }
-            ]
-        }
-    };
-}
-
-// FALLBACK MAPPINGS: Airline and destination names for better UX
-function getAirlineNameFallback(code) {
-    const airlineMap = {
-        'WF': 'Widerøe',
-        'SK': 'SAS',
-        'DY': 'Norwegian',
-        'KL': 'KLM',
-        'LH': 'Lufthansa',
-        'BA': 'British Airways',
-        'AF': 'Air France',
-        'LN': 'Linjeflyg',
-        'FI': 'Icelandair',
-        'QF': 'Qantas',
-        'EK': 'Emirates',
-        'LX': 'Swiss International',
-        'OS': 'Austrian Airlines',
-        'TP': 'TAP Air Portugal'
-    };
-    
-    return airlineMap[code?.toUpperCase()] || code;
-}
-
-function getDestinationNameFallback(code) {
-    const airportMap = {
-        'OSL': 'Oslo Lufthavn',
-        'BOO': 'Bodø Lufthavn', 
-        'TRD': 'Trondheim Lufthavn',
-        'BGO': 'Bergen Lufthavn',
-        'SVG': 'Stavanger Lufthavn',
-        'AES': 'Ålesund Lufthavn',
-        'KRS': 'Kristiansand Lufthavn',
-        'TOS': 'Tromsø Lufthavn',
-        'EVE': 'Evenes Lufthavn',
-        'ALF': 'Alta Lufthavn',
-        'LKN': 'Leknes Lufthavn',
-        'LYR': 'Longyearbyen Lufthavn',
-        'CPH': 'København',
-        'ARN': 'Stockholm',
-        'LHR': 'London Heathrow',
-        'AMS': 'Amsterdam',
-        'CDG': 'Paris Charles de Gaulle',
-        'FRA': 'Frankfurt'
-    };
-    
-    return airportMap[code?.toUpperCase()] || code;
 }
 
 // ENHANCED: Update stats cards - USE DATABASE NAMES DIRECTLY
@@ -652,7 +589,7 @@ function updateStatsCards(data) {
             updateCard(cards[2], data.uniqueRoutes);
         }
 
-        console.log('✅ Stats cards updated successfully with name mapping');
+        console.log('✅ Stats cards updated successfully');
         
     } catch (error) {
         console.error('❌ Error updating stats cards:', error);
@@ -848,7 +785,7 @@ async function loadFiles() {
             if (result.error) {
                 console.warn('⚠️ Files API returned with warning:', result.message);
             } else if (result.files && result.files.length > 0) {
-                console.log('✅ Real data loaded from Azure Function');
+                console.log(result.cached ? '✅ Cached data from backend' : '✅ Fresh data loaded');
             }
             
             if (result && result.files && result.files.length > 0) {
