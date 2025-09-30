@@ -917,6 +917,14 @@ function escapeHtml(unsafe) {
 
 function formatFileSize(bytes) {
     if (!bytes) return 'Unknown';
+    
+    // If it's already a formatted string (like "27507KB"), just clean it up
+    if (typeof bytes === 'string') {
+        // Remove any existing spaces and add a proper space
+        return bytes.replace(/([0-9])([A-Z])/g, '$1 $2');
+    }
+    
+    // Otherwise, calculate from bytes
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
