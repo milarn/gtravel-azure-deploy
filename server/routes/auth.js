@@ -482,16 +482,14 @@ router.get('/api/stats', async (req, res) => {
                             percentage: dest.percentage
                         }))
                     },
-                    uniqueRoutes: {
-                        value: functionResult.stats?.flightMetrics?.value?.toString() || '0',
-                        label: functionResult.stats?.flightMetrics?.subtitle || 'No routes found',
-                        details: (functionResult.stats?.flightMetrics?.topRoutes || []).map(route => ({
-                            route: route.route,
-                            from: route.from,
-                            to: route.to,
-                            frequency: route.frequency,
-                            lastUsed: route.lastUsed
-                        }))
+                    totalSum: {
+                        value: functionResult.stats?.totalSum?.formattedValue || 'NOK 0,00',
+                        label: functionResult.stats?.totalSum?.subtitle || 'Total sum',
+                        details: {
+                            amount: functionResult.stats?.totalSum?.value || '0',
+                            currency: functionResult.stats?.totalSum?.currency || 'NOK',
+                            formatted: functionResult.stats?.totalSum?.formattedValue || 'NOK 0,00'
+                        }
                     }
                 },
                 totalFlights: functionResult.totalFlights || 0,
@@ -520,10 +518,14 @@ router.get('/api/stats', async (req, res) => {
                             { code: 'OSL', name: 'Oslo Airport', count: 42, percentage: 38 }
                         ]
                     },
-                    uniqueRoutes: {
-                        value: '147',
+                    totalSum: {
+                        value: 'NOK 125,000.00',
                         label: 'Demo data (Function unavailable)',
-                        details: []
+                        details: {
+                            amount: '125000',
+                            currency: 'NOK',
+                            formatted: 'NOK 125,000.00'
+                        }
                     }
                 },
                 error: 'Data temporarily unavailable',

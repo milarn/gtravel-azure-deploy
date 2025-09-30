@@ -260,7 +260,7 @@ async function downloadCardData(cardType) {
                 filename = 'travel_destinations_report.csv';
                 break;
                 
-            case 'routes':
+            case 'totalSum':
                 csvContent = 'Route,From,To,Frequency,Last Used\n';
                 if (data.details && Array.isArray(data.details)) {
                     data.details.forEach(item => {
@@ -404,17 +404,37 @@ function generateDetailTable(cardType, data) {
 
     switch (cardType) {
         case 'airlines':
-            headerRow = '<tr><th>Rank</th><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map((item, index) => {
-                // Use database name directly - NO fallback mapping
-                return `<tr>
-                    <td><strong>#${index + 1}</strong></td>
-                    <td><strong>${item.code}</strong></td>
-                    <td>${item.name || item.code}</td>
-                    <td>${item.count.toLocaleString()}</td>
-                    <td>${item.percentage}%</td>
-                </tr>`;
+            // For airlines, create bar chart visualization
+            const maxCount = data.details[0]?.count || 1;
+            const chartHtml = data.details.slice(0, 10).map((item, index) => {
+                const percentage = (item.count / maxCount) * 100;
+                return `
+                    <div class="airline-bar">
+                        <span class="airline-bar-label">${item.name || item.code}</span>
+                        <div class="airline-bar-visual" style="width: ${percentage}%"></div>
+                        <span class="airline-bar-count">${item.count.toLocaleString()} (${item.percentage}%)</span>
+                    </div>
+                `;
             }).join('');
+            
+            return `
+                <div class="airline-chart">
+                    <h4 style="margin-bottom: 15px; color: #333;">Top 10 Airlines</h4>
+                    ${chartHtml}
+                </div>
+                <table class="preview-table" style="margin-top: 20px;">
+                    <thead><tr><th>Rank</th><th>Code</th><th>Airline Name</th><th>Flights</th><th>Usage %</th></tr></thead>
+                    <tbody>
+                    ${data.details.map((item, index) => `<tr>
+                        <td><strong>#${index + 1}</strong></td>
+                        <td><strong>${item.code}</strong></td>
+                        <td>${item.name || item.code}</td>
+                        <td>${item.count.toLocaleString()}</td>
+                        <td>${item.percentage}%</td>
+                    </tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
             break;
             
         case 'destinations':
@@ -568,7 +588,7 @@ function updateStatsCards(data) {
         travelStatsData = {
             airlines: data.mostUsedAirline,
             destinations: data.mostVisitedDestination,
-            routes: data.uniqueRoutes
+            totalSum: data.totalSum
         };
 
         // Update each card
