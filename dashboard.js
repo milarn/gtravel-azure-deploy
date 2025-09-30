@@ -308,11 +308,21 @@ async function viewCardDetails(cardType) {
             return;
         }
         
-        // Check if details array exists and has data
-        if (!data.details || !Array.isArray(data.details) || data.details.length === 0) {
-            console.warn(`No details available for ${cardType}. Data structure:`, data);
-            alert(`No detailed data available for ${cardType}. The Azure Function may need to be updated with the latest code that returns all statistics.`);
-            return;
+        // Check if details exist and has data
+        if (cardType === 'totalSum') {
+            // For totalSum, details is an object, not an array
+            if (!data.details || typeof data.details !== 'object') {
+                console.warn(`No details available for ${cardType}. Data structure:`, data);
+                alert(`No detailed data available for ${cardType}.`);
+                return;
+            }
+        } else {
+            // For other card types, details should be an array
+            if (!data.details || !Array.isArray(data.details) || data.details.length === 0) {
+                console.warn(`No details available for ${cardType}. Data structure:`, data);
+                alert(`No detailed data available for ${cardType}. The Azure Function may need to be updated with the latest code that returns all statistics.`);
+                return;
+            }
         }
 
         // Create modal for detailed view
@@ -404,13 +414,13 @@ function generateDetailTable(cardType, data) {
     switch (cardType) {
         case 'airlines':
             // For airlines, create bar chart visualization
-            const maxCount = data.details[0]?.count || 1;
             const chartHtml = data.details.slice(0, 10).map((item, index) => {
-                const percentage = (item.count / maxCount) * 100;
+                // Use actual percentage from data instead of calculating relative to max
+                const barWidth = Math.max(item.percentage, 2); // Minimum 2% width for visibility
                 return `
                     <div class="airline-bar">
                         <span class="airline-bar-label">${item.name || item.code}</span>
-                        <div class="airline-bar-visual" style="width: ${percentage}%"></div>
+                        <div class="airline-bar-visual" style="width: ${barWidth}%"></div>
                         <span class="airline-bar-count">${item.count.toLocaleString()} (${item.percentage}%)</span>
                     </div>
                 `;
