@@ -362,11 +362,17 @@ router.get('/api/files', async (req, res) => {
             const formattedFiles = files.map(file => {
                 // Calculate proper file size
                 let fileSize = 'Unknown';
-                if (file.recordCount && !isNaN(file.recordCount)) {
+                
+                // Try to parse existing size first
+                if (file.size && typeof file.size === 'string' && file.size !== 'Unknown') {
+                    fileSize = file.size;
+                } else if (file.recordCount && !isNaN(file.recordCount)) {
+                    // Calculate from record count
                     const sizeKB = Math.round(file.recordCount * 0.8);
                     fileSize = `${sizeKB} KB`;
-                } else if (file.size && file.size !== 'Unknown') {
-                    fileSize = file.size;
+                } else {
+                    // Fallback to 0 KB instead of Unknown
+                    fileSize = '0 KB';
                 }
                 
                 return {
