@@ -220,7 +220,7 @@ function setupCardExports() {
 }
 
 function getCardType(index) {
-    const types = ['airlines', 'destinations', 'routes'];
+    const types = ['airlines', 'destinations', 'totalSum'];
     return types[index] || 'unknown';
 }
 
@@ -261,13 +261,12 @@ async function downloadCardData(cardType) {
                 break;
                 
             case 'totalSum':
-                csvContent = 'Route,From,To,Frequency,Last Used\n';
-                if (data.details && Array.isArray(data.details)) {
-                    data.details.forEach(item => {
-                        csvContent += `"${item.route}","${item.from}","${item.to}","${item.frequency}","${item.lastUsed}"\n`;
-                    });
+                csvContent = 'Description,Amount,Currency\n';
+                if (data.details) {
+                    csvContent += `"Total Amount","${data.details.amount}","${data.details.currency}"\n`;
+                    csvContent += `"Formatted","${data.details.formatted}","${data.details.currency}"\n`;
                 }
-                filename = 'travel_routes_report.csv';
+                filename = 'travel_total_sum_report.csv';
                 break;
                 
             default:
@@ -379,7 +378,7 @@ function getCardTitle(cardType) {
     const titles = {
         'airlines': 'Most Used Airlines',
         'destinations': 'Most Visited Destinations', 
-        'routes': 'Unique Routes'
+        'totalSum': 'Total Sum'
     };
     return titles[cardType] || cardType;
 }
@@ -451,16 +450,14 @@ function generateDetailTable(cardType, data) {
             }).join('');
             break;
             
-        case 'routes':
-            headerRow = '<tr><th>Route</th><th>From</th><th>To</th><th>Frequency</th></tr>';
-            bodyRows = data.details.map(item => 
-                `<tr>
-                    <td><strong>${item.route}</strong></td>
-                    <td>${item.from}</td>
-                    <td>${item.to}</td>
-                    <td>${item.frequency}</td>
-                </tr>`
-            ).join('');
+        case 'totalSum':
+            return `
+                <div style="padding: 20px; text-align: center;">
+                    <h2 style="font-size: 48px; color: #2563eb; margin-bottom: 10px;">${data.details.formatted}</h2>
+                    <p style="font-size: 18px; color: #666;">${data.value}</p>
+                    <p style="font-size: 14px; color: #999; margin-top: 20px;">Total sum of all flight expenses</p>
+                </div>
+            `;
             break;
     }
 
@@ -606,7 +603,7 @@ function updateStatsCards(data) {
         
         // Routes card
         if (cards[2]) {
-            updateCard(cards[2], data.uniqueRoutes);
+            updateCard(cards[2], data.totalSum);
         }
 
         console.log('✅ Stats cards updated successfully');

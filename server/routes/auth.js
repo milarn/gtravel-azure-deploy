@@ -558,10 +558,14 @@ router.get('/api/skeleton', async (req, res) => {
                         label: 'Laster...\nAnalyserer destinasjoner',
                         details: []
                     },
-                    uniqueRoutes: {
+                    totalSum: {
                         value: '...',
-                        label: 'Analyserer reiseruter',
-                        details: []
+                        label: 'Laster...\nBeregner totalsum',
+                        details: {
+                            amount: '0',
+                            currency: 'NOK',
+                            formatted: 'NOK 0,00'
+                        }
                     }
                 },
                 files: [

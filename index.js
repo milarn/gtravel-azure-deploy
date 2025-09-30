@@ -85,11 +85,12 @@ module.exports = async function (context, req) {
                                 count: 0,
                                 all: []
                             },
-                            flightMetrics: {
-                                title: "Unike ruter",
+                            totalSum: {
+                                title: "Total Sum",
                                 value: 0,
-                                subtitle: "Forskjellige flyreiser",
-                                topRoutes: []
+                                currency: 'NOK',
+                                subtitle: "Laster...",
+                                formattedValue: 'NOK 0,00'
                             }
                         },
                         files: [
