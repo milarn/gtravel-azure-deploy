@@ -357,37 +357,21 @@ async function calculateDynamicStats(flightData, context) {
             })
         );
         
-        // Calculate unique routes
-        const uniqueRoutes = new Set();
-        const routeCounts = {};
+        // Calculate total amount sum
+        let totalAmount = 0;
+        let currencyCode = 'NOK';
         
         flightData.forEach(record => {
-            if (record.FDESTCD && record.TDESTCD && 
-                String(record.FDESTCD).trim() !== '' && String(record.TDESTCD).trim() !== '') {
-                const from = String(record.FDESTCD).trim().toUpperCase();
-                const to = String(record.TDESTCD).trim().toUpperCase();
-                const route = `${from}-${to}`;
-                uniqueRoutes.add(route);
-                routeCounts[route] = (routeCounts[route] || 0) + 1;
+            if (record.Amount && !isNaN(record.Amount)) {
+                totalAmount += parseFloat(record.Amount);
+            }
+            if (record.Currency && !currencyCode) {
+                currencyCode = record.Currency;
             }
         });
         
-        // Convert route counts to array and sort
-        const topRoutes = Object.entries(routeCounts)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 20) // Top 20 routes
-            .map(([route, count]) => {
-                const [from, to] = route.split('-');
-                return {
-                    route: route,
-                    from: from,
-                    to: to,
-                    frequency: count,
-                    lastUsed: new Date().toISOString().split('T')[0]
-                };
-            });
-        
-        context.log(`📈 Stats calculated - Airlines: ${airlinesWithPercentages.length}, Destinations: ${allDestinationsWithNames.length}, Routes: ${uniqueRoutes.size}`);
+        context.log(`💰 Total amount: ${totalAmount.toFixed(2)} ${currencyCode}`);
+        context.log(`📈 Stats calculated - Airlines: ${airlinesWithPercentages.length}, Destinations: ${allDestinationsWithNames.length}, Total: ${currencyCode} ${totalAmount.toFixed(2)}`);
         
         return {
             mostUsedAirlines: {
@@ -405,11 +389,12 @@ async function calculateDynamicStats(flightData, context) {
                 count: allDestinationsWithNames[0]?.count || 0,
                 all: allDestinationsWithNames
             },
-            flightMetrics: {
-                title: "Unike ruter",
-                value: uniqueRoutes.size,
-                subtitle: "Forskjellige flyreiser",
-                topRoutes: topRoutes
+            totalSum: {
+                title: "Total Sum",
+                value: totalAmount.toFixed(2),
+                currency: currencyCode,
+                subtitle: `Sum av ${totalFlights.toLocaleString()} flyreiser`,
+                formattedValue: `${currencyCode} ${totalAmount.toLocaleString('no-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             }
         };
         
@@ -440,16 +425,16 @@ async function getAirlineNames(topAirlines, context) {
                 request.input(`code${i}`, sql.NVarChar(10), code);
             });
             
-            const query = `SELECT UPPER(AIRLCD) as AIRLCD, AIRLNAME 
+            const query = `SELECT UPPER(AIRLCODE) as AIRLCODE, AIRLNAME 
                           FROM dbo.TAS_AIRL 
-                          WHERE UPPER(AIRLCD) IN (${placeholders})`;
+                          WHERE UPPER(AIRLCODE) IN (${placeholders})`;
             
             const airlineResult = await request.query(query);
             
             // Create a map for quick lookup
             const nameMap = {};
             airlineResult.recordset.forEach(row => {
-                nameMap[row.AIRLCD] = row.AIRLNAME;
+                nameMap[row.AIRLCODE] = row.AIRLNAME;
             });
             
             // Build result with names
@@ -480,33 +465,12 @@ async function getAirlineNames(topAirlines, context) {
     }
 }
 
-// Get destination name from database
+// Get destination name
 async function getDestinationName(destCode, context) {
     if (!destCode) {
         return { code: 'N/A', name: 'Ingen data' };
     }
     
-    try {
-        const request = new sql.Request();
-        request.input('destCode', sql.NVarChar(10), destCode.toUpperCase());
-        
-        const result = await request.query(`
-            SELECT UPPER(DESTCD) as DESTCD, DESTNAMETXT 
-            FROM dbo.TAS_DEST 
-            WHERE UPPER(DESTCD) = @destCode
-        `);
-        
-        if (result.recordset && result.recordset.length > 0) {
-            return {
-                code: destCode,
-                name: result.recordset[0].DESTNAMETXT || destCode
-            };
-        }
-    } catch (error) {
-        context.log.error(`❌ Error looking up destination ${destCode}:`, error);
-    }
-    
-    // Fallback to just the code
     return {
         code: destCode,
         name: destCode
