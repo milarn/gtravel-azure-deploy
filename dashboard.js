@@ -23,8 +23,13 @@ async function initDashboard() {
         // Properly await authentication before proceeding
         await checkAuth();
         setupEventListeners();
-        // Load dynamic statistics after authentication
-        await loadDynamicStats();
+        
+        // OPTIMIZATION: Load stats and files in parallel
+        await Promise.all([
+            loadDynamicStats(),
+            // Files are already loaded in checkAuth, but we can add another call here if needed
+        ]);
+        
         // Add export functionality to cards
         setupCardExports();
     } catch (error) {
@@ -35,16 +40,28 @@ async function initDashboard() {
 
 function setupEventListeners() {
     try {
-        // Refresh button
+        // Refresh button - OPTIMIZED: Clear caches and load in parallel
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
                 try {
                     refreshBtn.classList.add('loading');
-                    await loadFiles();
-                    await loadDynamicStats();
+                    
+                    // Clear caches to force fresh data
+                    filesCache = null;
+                    filesCacheTime = null;
+                    statsCache = null;
+                    statsCacheTime = null;
+                    
+                    // Load in parallel for faster refresh
+                    await Promise.all([
+                        loadFiles(),
+                        loadDynamicStats()
+                    ]);
+                    
+                    console.log('✨ Dashboard refreshed successfully');
                 } catch (error) {
-                    console.error('Error loading files:', error);
+                    console.error('Error refreshing dashboard:', error);
                 } finally {
                     refreshBtn.classList.remove('loading');
                 }
@@ -437,10 +454,14 @@ function generateDetailTable(cardType, data) {
     `;
 }
 
-// ENHANCED: Load dynamic statistics with better error handling and caching
+// ENHANCED: Caching for both stats and files
 let statsCache = null;
 let statsCacheTime = null;
 const STATS_CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
+
+let filesCache = null;
+let filesCacheTime = null;
+const FILES_CACHE_DURATION = 1 * 60 * 1000; // 1 minute cache for files
 
 async function loadDynamicStats() {
     console.log('🚀 Loading dynamic statistics...');
@@ -780,15 +801,27 @@ async function loadFiles() {
         const noFilesMessage = document.getElementById('noFilesMessage');
         const totalFilesElement = document.getElementById('totalFiles');
 
-        // Show loading state
-        if (loadingElement) loadingElement.style.display = 'flex';
-        if (noFilesMessage) noFilesMessage.style.display = 'none';
-        if (tableBody) tableBody.innerHTML = '';
-
         // Get search and filter parameters
         const searchTerm = document.getElementById('searchInput')?.value || '';
         const fromDate = document.getElementById('fromDate')?.value;
         const toDate = document.getElementById('toDate')?.value;
+        
+        // OPTIMIZATION: Check cache first (skip cache if filters are active)
+        const cacheKey = `${searchTerm}-${fromDate}-${toDate}`;
+        if (!searchTerm && !fromDate && !toDate && filesCache && filesCacheTime && 
+            (Date.now() - filesCacheTime < FILES_CACHE_DURATION)) {
+            console.log('✅ Using cached files data');
+            displayFiles(filesCache.files);
+            if (totalFilesElement) {
+                totalFilesElement.textContent = filesCache.files.length;
+            }
+            return;
+        }
+
+        // Show loading state
+        if (loadingElement) loadingElement.style.display = 'flex';
+        if (noFilesMessage) noFilesMessage.style.display = 'none';
+        if (tableBody) tableBody.innerHTML = '';
 
         // Make API call using session-based auth
         const apiUrl = '/auth/api/files';
@@ -819,6 +852,13 @@ async function loadFiles() {
             }
             
             if (result && result.files && result.files.length > 0) {
+                // OPTIMIZATION: Cache files if no filters are active
+                if (!searchTerm && !fromDate && !toDate) {
+                    filesCache = { files: result.files };
+                    filesCacheTime = Date.now();
+                    console.log('💾 Files cached for 1 minute');
+                }
+                
                 displayFiles(result.files);
                 if (totalFilesElement) {
                     totalFilesElement.textContent = result.files.length;
