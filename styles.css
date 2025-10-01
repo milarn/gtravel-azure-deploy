@@ -1055,7 +1055,6 @@ body {
 }
 
 .airline-bar-visual {
-    flex: 1;
     height: 20px;
     background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     border-radius: 4px;
@@ -1064,6 +1063,8 @@ body {
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
     min-width: 20px;
+    /* Remove flex property that might be causing issues */
+    flex: none !important;
 }
 
 .airline-bar-visual:hover {

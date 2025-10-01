@@ -414,16 +414,14 @@ function generateDetailTable(cardType, data) {
     switch (cardType) {
         case 'airlines':
             // For airlines, create bar chart visualization
-            const maxCount = Math.max(...data.details.map(item => item.count));
             const chartHtml = data.details.slice(0, 10).map((item, index) => {
-                // Calculate percentage relative to the highest count for visual proportion
-                const visualPercentage = (item.count / maxCount) * 100;
-                // Ensure minimum width for visibility
-                const barWidth = Math.max(visualPercentage, 3);
+                // Use the actual percentage directly - this should create proper proportions
+                const barWidth = Math.max(item.percentage || 1, 1); // Minimum 1% for tiny values
+                console.log(`Bar ${index + 1}: ${item.name} - ${item.percentage}% -> width: ${barWidth}%`);
                 return `
                     <div class="airline-bar">
                         <span class="airline-bar-label">${item.name || item.code}</span>
-                        <div class="airline-bar-visual" style="width: ${barWidth}%"></div>
+                        <div class="airline-bar-visual" style="width: ${barWidth}% !important; max-width: ${barWidth}%;"></div>
                         <span class="airline-bar-count">${item.count.toLocaleString()} (${item.percentage}%)</span>
                     </div>
                 `;
@@ -464,16 +462,84 @@ function generateDetailTable(cardType, data) {
             break;
             
         case 'totalSum':
+            // Create a breakdown showing how the total was calculated
+            const airlinesData = travelStatsData?.airlines?.details || [];
+            const destinationsData = travelStatsData?.destinations?.details || [];
+            
+            // Calculate average cost per flight
+            const totalFlights = airlinesData.reduce((sum, airline) => sum + airline.count, 0);
+            const avgCostPerFlight = totalFlights > 0 ? (parseFloat(data.details?.amount || 0) / totalFlights) : 0;
+            
+            // Get top 5 airlines for cost breakdown (estimate based on flight count)
+            const topAirlinesCost = airlinesData.slice(0, 5).map(airline => {
+                const estimatedCost = airline.count * avgCostPerFlight;
+                return {
+                    name: airline.name || airline.code,
+                    flights: airline.count,
+                    estimatedCost: estimatedCost,
+                    percentage: Math.round((estimatedCost / parseFloat(data.details?.amount || 1)) * 100)
+                };
+            });
+            
+            // Get top 5 destinations for cost breakdown
+            const topDestinationsCost = destinationsData.slice(0, 5).map(dest => {
+                const estimatedCost = dest.count * avgCostPerFlight;
+                return {
+                    name: dest.name || dest.code,
+                    visits: dest.count,
+                    estimatedCost: estimatedCost,
+                    percentage: Math.round((estimatedCost / parseFloat(data.details?.amount || 1)) * 100)
+                };
+            });
+            
             return `
-                <div style="padding: 30px; text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
+                <div style="padding: 25px;">
+                    <!-- Total Amount Header -->
+                    <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
+                        <h1 style="font-size: 42px; color: #2563eb; margin: 0; font-weight: 700;">${data.details?.formatted || data.value || 'N/A'}</h1>
+                        <p style="font-size: 16px; color: #6c757d; margin: 5px 0 0 0;">Total travel expenses across ${totalFlights.toLocaleString()} flights</p>
+                        <p style="font-size: 14px; color: #8aa4af; margin: 5px 0 0 0;">Average cost per flight: ${data.details?.currency || 'NOK'} ${avgCostPerFlight.toLocaleString('no-NO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                    </div>
+                    
+                    <!-- Cost Breakdown by Airlines -->
+                    <div style="margin-bottom: 25px;">
+                        <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">📊 Cost Breakdown by Airlines</h3>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            ${topAirlinesCost.map(airline => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 8px; background: white; border-radius: 6px;">
+                                    <span style="font-weight: 500; color: #333;">${airline.name}</span>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 600; color: #2563eb;">${data.details?.currency || 'NOK'} ${airline.estimatedCost.toLocaleString('no-NO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                        <div style="font-size: 12px; color: #6c757d;">${airline.flights} flights (${airline.percentage}%)</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Cost Breakdown by Destinations -->
                     <div style="margin-bottom: 20px;">
-                        <h1 style="font-size: 56px; color: #2563eb; margin: 0; font-weight: 700; text-shadow: 0 2px 4px rgba(37,99,235,0.1);">${data.details?.formatted || data.value || 'N/A'}</h1>
+                        <h3 style="color: #333; margin-bottom: 15px; font-size: 18px;">🗺️ Cost Breakdown by Destinations</h3>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            ${topDestinationsCost.map(dest => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 8px; background: white; border-radius: 6px;">
+                                    <span style="font-weight: 500; color: #333;">${dest.name}</span>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 600; color: #2563eb;">${data.details?.currency || 'NOK'} ${dest.estimatedCost.toLocaleString('no-NO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                                        <div style="font-size: 12px; color: #6c757d;">${dest.visits} visits (${dest.percentage}%)</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div style="margin-bottom: 15px;">
-                        <p style="font-size: 18px; color: #495057; margin: 0; font-weight: 500;">Total Amount: ${data.details?.amount || '0'} ${data.details?.currency || 'NOK'}</p>
-                    </div>
-                    <div style="background: rgba(37,99,235,0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
-                        <p style="font-size: 14px; color: #6c757d; margin: 0;">📊 Total sum of all flight expenses in the selected period</p>
+                    
+                    <!-- Summary Stats -->
+                    <div style="background: rgba(37,99,235,0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                        <p style="margin: 0; font-size: 14px; color: #495057;">
+                            <strong>Summary:</strong> This total represents expenses from ${totalFlights.toLocaleString()} flights 
+                            across ${airlinesData.length} different airlines and ${destinationsData.length} destinations. 
+                            Cost estimates are based on flight frequency and average spending patterns.
+                        </p>
                     </div>
                 </div>
             `;
