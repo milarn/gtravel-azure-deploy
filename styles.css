@@ -424,8 +424,10 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
-    min-height: 180px;
+    min-height: 200px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Add decorative element */
@@ -500,11 +502,13 @@ body {
     min-height: 2rem;
 }
 
-/* ADDED: Card Action Buttons */
+/* ADDED: Card Action Buttons - Fixed positioning */
 .card-actions {
     display: flex;
     gap: 0.5rem;
     margin-top: auto;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .card-action-btn {
