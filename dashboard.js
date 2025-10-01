@@ -463,8 +463,27 @@ function generateDetailTable(cardType, data) {
             
         case 'totalSum':
             // Create a breakdown showing how the total was calculated
-            const airlinesData = travelStatsData?.airlines?.details || [];
-            const destinationsData = travelStatsData?.destinations?.details || [];
+            // Access the airlines and destinations data from the global stats
+            const airlinesData = window.currentStatsData?.mostUsedAirline?.details || [];
+            const destinationsData = window.currentStatsData?.mostVisitedDestination?.details || [];
+            
+            console.log('Total Sum Detail - Airlines data:', airlinesData);
+            console.log('Total Sum Detail - Destinations data:', destinationsData);
+            
+            if (airlinesData.length === 0 && destinationsData.length === 0) {
+                return `
+                    <div style="padding: 30px; text-align: center;">
+                        <h1 style="font-size: 42px; color: #2563eb; margin-bottom: 20px;">${data.details?.formatted || data.value || 'N/A'}</h1>
+                        <p style="font-size: 16px; color: #6c757d; margin-bottom: 20px;">Total travel expenses</p>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                            <p style="font-size: 14px; color: #495057; margin: 0;">
+                                📊 This represents the total sum of all flight expenses in the selected period.
+                                Detailed breakdown is not available at the moment.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
             
             // Calculate average cost per flight
             const totalFlights = airlinesData.reduce((sum, airline) => sum + airline.count, 0);
@@ -666,12 +685,15 @@ function updateStatsCards(data) {
         // NO name mapping - use database names directly
         // The backend already provides the correct names from the database
         
-        // Store data for export functionality
+        // Store data for export functionality and global access
         travelStatsData = {
             airlines: data.mostUsedAirline,
             destinations: data.mostVisitedDestination,
             totalSum: data.totalSum
         };
+        
+        // Also store globally for detail views
+        window.currentStatsData = data;
 
         // Update each card
         const cards = document.querySelectorAll('.travel-stats .stat-card');
