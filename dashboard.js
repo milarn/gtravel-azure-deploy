@@ -552,17 +552,49 @@ function generateDetailTable(cardType, data) {
             break;
             
         case 'destinations':
-            headerRow = '<tr><th>Rank</th><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr>';
-            bodyRows = data.details.map((item, index) => {
-                // Use database name directly - NO fallback mapping
-                return `<tr>
-                    <td><strong>#${index + 1}</strong></td>
-                    <td><strong>${item.code}</strong></td>
-                    <td>${item.name || item.code}</td>
-                    <td>${item.count.toLocaleString()}</td>
-                    <td>${item.percentage}%</td>
-                </tr>`;
+            // For destinations, create bubble chart visualization
+            const maxVisits = Math.max(...data.details.map(item => item.count));
+            const bubbleHtml = data.details.slice(0, 10).map((item, index) => {
+                // Calculate bubble size based on visit count (20px to 80px range)
+                const bubbleSize = Math.max(20 + (item.count / maxVisits) * 60, 20);
+                const fontSize = Math.max(bubbleSize * 0.15, 10); // Responsive font size
+                console.log(`Bubble ${index + 1}: ${item.name} - ${item.count} visits -> size: ${bubbleSize}px`);
+                return `
+                    <div class="destination-bubble-container">
+                        <div class="destination-bubble" style="width: ${bubbleSize}px; height: ${bubbleSize}px; font-size: ${fontSize}px;">
+                            <div class="bubble-content">
+                                <div class="bubble-code">${item.code}</div>
+                                <div class="bubble-count">${item.count}</div>
+                            </div>
+                        </div>
+                        <div class="bubble-label">
+                            <div class="bubble-name">${item.name || item.code}</div>
+                            <div class="bubble-stats">${item.count.toLocaleString()} visits (${item.percentage}%)</div>
+                        </div>
+                    </div>
+                `;
             }).join('');
+            
+            return `
+                <div class="destination-bubbles">
+                    <h4 style="margin-bottom: 20px; color: #333; text-align: center;">Top 10 Destinations - Bubble Size = Visit Frequency</h4>
+                    <div class="bubbles-container">
+                        ${bubbleHtml}
+                    </div>
+                </div>
+                <table class="preview-table" style="margin-top: 30px;">
+                    <thead><tr><th>Rank</th><th>Code</th><th>Destination</th><th>Visits</th><th>Usage %</th></tr></thead>
+                    <tbody>
+                    ${data.details.map((item, index) => `<tr>
+                        <td><strong>#${index + 1}</strong></td>
+                        <td><strong>${item.code}</strong></td>
+                        <td>${item.name || item.code}</td>
+                        <td>${item.count.toLocaleString()}</td>
+                        <td>${item.percentage}%</td>
+                    </tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
             break;
             
         case 'totalSum':
