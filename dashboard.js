@@ -414,9 +414,12 @@ function generateDetailTable(cardType, data) {
     switch (cardType) {
         case 'airlines':
             // For airlines, create bar chart visualization
+            const maxCount = Math.max(...data.details.map(item => item.count));
             const chartHtml = data.details.slice(0, 10).map((item, index) => {
-                // Use actual percentage from data instead of calculating relative to max
-                const barWidth = Math.max(item.percentage, 2); // Minimum 2% width for visibility
+                // Calculate percentage relative to the highest count for visual proportion
+                const visualPercentage = (item.count / maxCount) * 100;
+                // Ensure minimum width for visibility
+                const barWidth = Math.max(visualPercentage, 3);
                 return `
                     <div class="airline-bar">
                         <span class="airline-bar-label">${item.name || item.code}</span>
@@ -462,10 +465,16 @@ function generateDetailTable(cardType, data) {
             
         case 'totalSum':
             return `
-                <div style="padding: 20px; text-align: center;">
-                    <h2 style="font-size: 48px; color: #2563eb; margin-bottom: 10px;">${data.details.formatted}</h2>
-                    <p style="font-size: 18px; color: #666;">${data.value}</p>
-                    <p style="font-size: 14px; color: #999; margin-top: 20px;">Total sum of all flight expenses</p>
+                <div style="padding: 30px; text-align: center; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
+                    <div style="margin-bottom: 20px;">
+                        <h1 style="font-size: 56px; color: #2563eb; margin: 0; font-weight: 700; text-shadow: 0 2px 4px rgba(37,99,235,0.1);">${data.details?.formatted || data.value || 'N/A'}</h1>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <p style="font-size: 18px; color: #495057; margin: 0; font-weight: 500;">Total Amount: ${data.details?.amount || '0'} ${data.details?.currency || 'NOK'}</p>
+                    </div>
+                    <div style="background: rgba(37,99,235,0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p style="font-size: 14px; color: #6c757d; margin: 0;">📊 Total sum of all flight expenses in the selected period</p>
+                    </div>
                 </div>
             `;
             break;
