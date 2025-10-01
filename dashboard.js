@@ -560,9 +560,7 @@ function generateDetailTable(cardType, data) {
                 console.log(`Column ${index + 1}: ${item.name} - ${item.count} visits -> height: ${columnHeight}px`);
                 return `
                     <div class="destination-column">
-                        <div class="column-bar" style="height: ${columnHeight}px;">
-                            <div class="column-value">${item.count.toLocaleString()}</div>
-                        </div>
+                        <div class="column-bar" style="height: ${columnHeight}px;"></div>
                         <div class="column-label">
                             <div class="column-code">${item.code}</div>
                             <div class="column-name">${item.name || item.code}</div>
